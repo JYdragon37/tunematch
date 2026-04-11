@@ -1,24 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { CountUpScore } from "@/components/ui/CountUpScore";
-import { ScoreBar } from "@/components/ui/ScoreBar";
-import { RadarChartComponent } from "@/components/charts/RadarChart";
-import { Button } from "@/components/ui/Button";
-import { getScoreDetails } from "@/lib/algorithm";
 import { getMatchUrl } from "@/lib/utils";
 import type { MatchResult } from "@/types";
 import ShareCardModal from "./ShareCardModal";
 import SaveResultModal from "./SaveResultModal";
 import { SoloResultView } from "@/components/result/SoloResultView";
-
-const SCORE_COLOR_MAP: Record<string, string> = {
-  channel: "#FF4D00",
-  category: "#F59E0B",
-  curiosity: "#10B981",
-  humor: "#8B5CF6",
-  pattern: "#3B82F6",
-};
+import { CompatibilityView } from "@/components/result/CompatibilityView";
 
 export default function ResultPage({ params }: { params: { matchId: string } }) {
   const [result, setResult] = useState<MatchResult | null>(null);
@@ -29,6 +17,8 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
   const [showShare, setShowShare] = useState(false);
   const [showSave, setShowSave] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const prevResultRef = useRef<MatchResult | null>(null);
   const router = useRouter();
   const pollRef = useRef<NodeJS.Timeout>();
 
@@ -44,6 +34,12 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
       setSessionStatus(data.sessionStatus || data.status);
 
       if (data.status === "done" && data.result) {
+        // 이전 결과가 솔로(tasteType 있음)이고 새 결과가 비교(tasteType 없음)이면 축하 오버레이
+        if (prevResultRef.current?.tasteType && !data.result.tasteType) {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2500);
+        }
+        prevResultRef.current = data.result;
         setResult(data.result);
         setLoading(false);
         setTimeout(() => {
@@ -52,6 +48,12 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
         }, 3000);
       } else if (data.status === "solo_done" && data.result) {
         // A 솔로 완료, 친구 대기 중
+        // 이전 결과가 솔로(tasteType 있음)이고 새 결과가 비교(tasteType 없음)이면 축하 오버레이
+        if (prevResultRef.current?.tasteType && !data.result.tasteType) {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2500);
+        }
+        prevResultRef.current = data.result;
         setResult(data.result);
         setLoading(false);
         pollRef.current = setTimeout(fetchResult, 3000);
@@ -129,7 +131,6 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
   }
 
   const isSolo = result.tasteType !== undefined;
-  const scoreDetails = getScoreDetails(result);
 
   // ─── 솔로 분석 뷰 (친구 대기 배너 포함) ───
   if (isSolo) {
@@ -177,116 +178,28 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
   // ─── 궁합 비교 결과 뷰 ───
   return (
     <main className="min-h-screen bg-background">
+      {showCelebration && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center animate-fade-in">
+          <div className="text-center px-8 py-10 bg-white rounded-3xl mx-5 shadow-2xl">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">궁합 결과 완성!</h2>
+            <p className="text-gray-500 text-sm">친구와의 취향 싱크로율이 나왔어요</p>
+          </div>
+        </div>
+      )}
       <div className="max-w-md mx-auto px-5 py-4 text-center">
         <span className="font-black text-xl text-text-primary tracking-tight">
           <span className="text-primary">TUNE</span>MATCH
         </span>
       </div>
-
-      <div className="max-w-md mx-auto px-5 pb-32 space-y-6">
-        <div className="text-center animate-fade-in">
-          <p className="text-lg font-semibold text-text-primary">
-            {result.userAName} × {result.userBName}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-3xl p-8 text-center border border-border shadow-sm animate-fade-in">
-          <div className="text-8xl font-black text-primary mb-2">
-            <CountUpScore target={result.totalScore} duration={2000} />
-          </div>
-          <p className="text-text-secondary font-medium mb-4">취향 싱크로율</p>
-          <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2">
-            <span className="text-primary font-bold text-sm">{result.commentType}</span>
-          </div>
-          <p className="text-text-secondary text-sm mt-4 leading-relaxed">"{result.comment}"</p>
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-1">
-          <h2 className="font-bold text-text-primary mb-5">세부 항목</h2>
-          {scoreDetails.map((detail, i) => (
-            <ScoreBar
-              key={detail.key}
-              label={detail.label}
-              score={detail.score}
-              maxScore={detail.maxScore}
-              delay={i * 100}
-              color={SCORE_COLOR_MAP[detail.key]}
-            />
-          ))}
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-2">
-          <h2 className="font-bold text-text-primary mb-2">취향 DNA 비교</h2>
-          <p className="text-xs text-text-muted mb-4">
-            <span className="text-primary">●</span> {result.userAName}
-            <span className="ml-3 text-blue-500">●</span> {result.userBName}
-          </p>
-          <RadarChartComponent
-            vectorA={result.userAVector}
-            vectorB={result.userBVector}
-            nameA={result.userAName}
-            nameB={result.userBName}
-          />
-        </div>
-
-        {result.commonChannels.length > 0 && (
-          <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-3">
-            <h2 className="font-bold text-text-primary mb-4">
-              공통 구독 채널 TOP {Math.min(result.commonChannels.length, 5)}
-            </h2>
-            <div className="space-y-3">
-              {result.commonChannels.slice(0, 5).map((channel, i) => (
-                <div key={channel.id} className="flex items-center gap-3">
-                  <span className="text-text-muted text-sm w-5">{i + 1}</span>
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-text-muted">
-                    {channel.title[0]}
-                  </div>
-                  <span className="text-text-primary text-sm font-medium">{channel.title}</span>
-                  <span className="ml-auto text-xs text-text-muted bg-muted rounded-full px-2 py-0.5">
-                    {channel.customCategory}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {result.recommendations.length > 0 && (
-          <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-4">
-            <h2 className="font-bold text-text-primary mb-4">📺 함께 볼 채널 추천</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {result.recommendations.map((channel) => (
-                <div key={channel.id} className="shrink-0 w-28 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-2 text-xl font-bold text-primary">
-                    {channel.title[0]}
-                  </div>
-                  <p className="text-xs text-text-primary font-medium leading-tight line-clamp-2">{channel.title}</p>
-                  <p className="text-xs text-text-muted mt-0.5">{channel.customCategory}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {adShown && (
-          <div className="bg-muted rounded-2xl p-4 text-center border border-border animate-fade-in">
-            <p className="text-xs text-text-muted">[광고 영역]</p>
-          </div>
-        )}
-
-        <div className="space-y-3 animate-fade-in-delay-5">
-          <Button variant="primary" size="lg" fullWidth onClick={() => setShowShare(true)}>
-            📤 결과 카드 공유하기
-          </Button>
-          <Button variant="secondary" size="lg" fullWidth onClick={() => setShowSave(true)}>
-            💾 결과 저장하기
-          </Button>
-          <Button variant="ghost" size="lg" fullWidth onClick={() => router.push("/connect")}>
-            🔄 다른 친구와 해보기
-          </Button>
-        </div>
+      <div className="max-w-md mx-auto px-5 pb-32">
+        <CompatibilityView
+          result={result}
+          matchId={params.matchId}
+          onShare={() => setShowShare(true)}
+          onSave={() => setShowSave(true)}
+        />
       </div>
-
       {showShare && result && (
         <ShareCardModal result={result} matchId={params.matchId} onClose={() => setShowShare(false)} />
       )}
