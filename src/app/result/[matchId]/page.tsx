@@ -51,13 +51,14 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
           setTimeout(() => setAdShown(true), 500);
         }, 3000);
       } else if (data.status === "solo_done" && data.result) {
-        // 솔로 분석 완료, 친구 대기 중
+        // A 솔로 완료, 친구 대기 중
         setResult(data.result);
         setLoading(false);
         pollRef.current = setTimeout(fetchResult, 3000);
-      } else if (["waiting", "analyzing", "b_joined"].includes(data.status)) {
+      } else if (["waiting", "b_joined", "analyzing"].includes(data.status)) {
+        // 솔로 없이 대기 중 OR B가 join했지만 아직 비교 안 함
+        setLoading(false);
         pollRef.current = setTimeout(fetchResult, 3000);
-        if (data.status === "b_joined") setLoading(false);
       } else {
         setLoading(false);
       }
@@ -100,15 +101,28 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
     );
   }
 
-  // ─── 결과 없음 ───
+  // ─── 솔로 없이 대기 중 ───
   if (!result) {
+    const waitMsg =
+      sessionStatus === "b_joined" ? "친구가 궁합 비교 버튼을 누르면 결과가 나와요" :
+      sessionStatus === "analyzing" ? "궁합 분석 중이에요..." :
+      "아직 친구가 연동하지 않았어요";
+    const waitTitle =
+      sessionStatus === "b_joined" ? "🎯 친구가 취향 분석 완료!" :
+      sessionStatus === "analyzing" ? "⚙️ 분석 중..." :
+      "⏳ 친구를 기다리는 중";
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-5">
-        <div className="text-center">
-          <div className="text-4xl mb-4">⏳</div>
-          <h1 className="text-xl font-bold text-text-primary mb-2">아직 친구가 연동하지 않았어요</h1>
-          <p className="text-text-secondary text-sm mb-6">링크를 공유하고 기다려주세요</p>
-          <Button onClick={() => router.back()} variant="secondary">돌아가기</Button>
+        <div className="text-center max-w-xs">
+          <h1 className="text-xl font-bold text-text-primary mb-2">{waitTitle}</h1>
+          <p className="text-text-secondary text-sm mb-6">{waitMsg}</p>
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-6" />
+          <button
+            onClick={handleCopyInvite}
+            className="text-sm font-semibold text-primary border border-primary/30 rounded-xl px-4 py-2 hover:bg-primary/5"
+          >
+            {inviteCopied ? "✓ 복사됨" : "🔗 초대 링크 복사"}
+          </button>
         </div>
       </div>
     );

@@ -164,6 +164,16 @@ function ShareContent() {
           </div>
         </div>
 
+        {/* 결과 확인 링크 */}
+        <div className="bg-gray-50 rounded-2xl p-4 text-center">
+          <p className="text-xs text-text-muted mb-2">친구가 연동하면 결과를 볼 수 있어요</p>
+          <Link href={`/result/${matchId}`}>
+            <button className="text-sm font-semibold text-primary hover:underline">
+              결과 확인하기 →
+            </button>
+          </Link>
+        </div>
+
         <div className="text-center">
           <Link href="/">
             <button className="text-sm text-text-muted hover:text-text-secondary underline">

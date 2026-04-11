@@ -60,6 +60,12 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "비교 실패" }));
+        // 이미 비교 완료된 경우 결과 페이지로 이동
+        if (res.status === 409) {
+          sessionStorage.removeItem(`solo_${params.matchId}`);
+          router.push(`/result/${params.matchId}`);
+          return;
+        }
         throw new Error(err.error || "비교 실패");
       }
 
