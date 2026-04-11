@@ -1,4 +1,5 @@
-import type { Channel, CategoryKey, CategoryVector, MatchResult, ScoreDetail, TasteType, TopCategory } from "@/types";
+import type { Channel, CategoryKey, CategoryVector, MatchResult, ScoreDetail, TasteType, TopCategory, ChannelStatItem, ChannelStatsData, LikedVideoInsight } from "@/types";
+import type { ChannelStat, LikedVideo } from "./youtube";
 import { v4 as uuidv4 } from "uuid";
 
 const CATEGORY_WEIGHTS: Record<CategoryKey, number> = {
@@ -287,6 +288,129 @@ const FRIEND_TYPE_MAP: Record<TasteType, { type: TasteType; reason: string }> = 
 
 export function getFriendType(tasteType: TasteType): { type: TasteType; reason: string } {
   return FRIEND_TYPE_MAP[tasteType];
+}
+
+// ─── Solo Analysis v2 ───
+
+export function analyzeChannelStats(
+  stats: ChannelStat[],
+  subscriptions: Channel[]
+): ChannelStatsData | null {
+  if (stats.length === 0) return null;
+
+  const withSubs = subscriptions.slice(0, stats.length).map((sub, i) => ({
+    ...stats[i],
+    subscribedAt: (sub as any).subscribedAt || undefined,
+  }));
+
+  const sorted = [...withSubs].sort((a, b) => b.subscriberCount - a.subscriberCount);
+  const topSub = sorted[0];
+  const smallestSub = sorted[sorted.length - 1];
+
+  // 구독 날짜 정렬
+  const withDates = withSubs.filter(s => s.subscribedAt);
+  withDates.sort((a, b) => new Date(a.subscribedAt!).getTime() - new Date(b.subscribedAt!).getTime());
+  const oldest = withDates[0];
+  const newest = withDates[withDates.length - 1];
+
+  // 소채널 (10만 이하)
+  const hiddenFans = withSubs.filter(s => s.subscriberCount < 100_000);
+
+  // 국가 분포
+  const countryCounts: Record<string, number> = {};
+  withSubs.forEach(s => {
+    const code = s.country || "KR";
+    countryCounts[code] = (countryCounts[code] || 0) + 1;
+  });
+  const countryLabels: Record<string, string> = {
+    KR: "🇰🇷 한국", US: "🇺🇸 미국", JP: "🇯🇵 일본",
+    GB: "🇬🇧 영국", IN: "🇮🇳 인도", AU: "🇦🇺 호주", CA: "🇨🇦 캐나다",
+  };
+  const total = withSubs.length;
+  const countryDist = Object.entries(countryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([code, count]) => ({
+      code, label: countryLabels[code] || code,
+      percent: Math.round((count / total) * 100),
+    }));
+
+  function toItem(s: ChannelStat & { subscribedAt?: string }): ChannelStatItem {
+    const yearsAgo = s.subscribedAt
+      ? Math.floor((Date.now() - new Date(s.subscribedAt).getTime()) / (365.25 * 24 * 3600 * 1000))
+      : undefined;
+    return {
+      title: s.title,
+      subscriberCount: s.subscriberCount,
+      formattedCount: formatCount(s.subscriberCount),
+      subscribedAt: s.subscribedAt,
+      yearsAgo,
+      country: s.country,
+    };
+  }
+
+  function formatCount(n: number): string {
+    if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+    if (n >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}천`;
+    return `${n}`;
+  }
+
+  return {
+    topSubscriber: toItem(topSub),
+    smallestSubscriber: toItem(smallestSub),
+    oldestSub: oldest ? toItem(oldest) : toItem(sorted[0]),
+    newestSub: newest ? toItem(newest) : toItem(sorted[0]),
+    hiddenFanCount: hiddenFans.length,
+    hiddenFanPercent: Math.round((hiddenFans.length / withSubs.length) * 100),
+    countryDist,
+  };
+}
+
+export function analyzeLikedVideos(
+  likedVideos: LikedVideo[],
+  subVector: CategoryVector
+): LikedVideoInsight | null {
+  if (likedVideos.length === 0) return null;
+
+  const likeCounts: Partial<Record<CategoryKey, number>> = {};
+  likedVideos.forEach(v => {
+    likeCounts[v.customCategory] = (likeCounts[v.customCategory] || 0) + 1;
+  });
+
+  const topEntry = (Object.entries(likeCounts) as [CategoryKey, number][])
+    .sort((a, b) => b[1] - a[1])[0];
+  const topCategory = topEntry?.[0] || "entertainment";
+
+  // 구독 벡터와 좋아요 벡터 코사인 유사도
+  const likeVector: CategoryVector = {
+    entertainment: 0, knowledge: 0, humor: 0, lifestyle: 0,
+    music: 0, news: 0, food: 0, tech: 0,
+  };
+  const total = likedVideos.length;
+  Object.entries(likeCounts).forEach(([k, v]) => {
+    if (k in likeVector) likeVector[k as CategoryKey] = (v as number) / total;
+  });
+  const matchScore = Math.round(cosineSimilarity(subVector, likeVector) * 100);
+
+  // 구독엔 없는데 좋아요엔 많은 카테고리
+  const subKeys = Object.entries(subVector).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+  const likeKeys = Object.entries(likeCounts).sort((a, b) => (b[1] as number) - (a[1] as number)).map(e => e[0]);
+  const surpriseCategory = likeKeys.find(k => !subKeys.slice(0, 3).includes(k)) as CategoryKey | undefined;
+
+  const CATEGORY_LABELS_LOCAL: Record<string, string> = {
+    entertainment: "엔터/게임", knowledge: "지식/교육", humor: "유머/밈",
+    lifestyle: "라이프스타일", music: "음악", news: "뉴스/시사", food: "음식/요리", tech: "테크",
+  };
+
+  return {
+    topCategory,
+    topCategoryLabel: CATEGORY_LABELS_LOCAL[topCategory] || topCategory,
+    matchScore,
+    surpriseCategory,
+    surpriseCategoryLabel: surpriseCategory ? CATEGORY_LABELS_LOCAL[surpriseCategory] : undefined,
+    totalLiked: likedVideos.length,
+  };
 }
 
 export function generateSoloComment(tasteType: TasteType, diversityIndex: number): { comment: string; commentType: string } {

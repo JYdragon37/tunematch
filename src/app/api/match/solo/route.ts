@@ -1,40 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, saveResult, updateSession, getResultBySession } from "@/lib/db";
 import {
-  buildCategoryVector,
-  classifyTasteType,
-  calcDiversityIndex,
-  getTopCategories,
-  getFriendType,
-  generateSoloComment,
+  buildCategoryVector, classifyTasteType, calcDiversityIndex, getTopCategories,
+  getFriendType, generateSoloComment, analyzeChannelStats, analyzeLikedVideos,
 } from "@/lib/algorithm";
+import { fetchYouTubeData } from "@/lib/youtube";
 import { mockRecommendedChannels } from "@/data/mock-channels";
-import type { TasteType } from "@/types";
+import { getCuratedRecommendations } from "@/data/curated-channels";
+import { supabaseAdmin } from "@/lib/supabase";
+import type { Channel, TasteType } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 
-// 취향 유형별 추천 채널 (실제 유명 YouTube 채널)
 const TASTE_RECOMMENDATIONS: Record<TasteType, Array<{ id: string; title: string; customCategory: string }>> = {
   tech:          [{ id: "r1", title: "Fireship", customCategory: "tech" }, { id: "r2", title: "Theo - t3.gg", customCategory: "tech" }, { id: "r3", title: "Traversy Media", customCategory: "tech" }],
   knowledge:     [{ id: "r4", title: "Kurzgesagt", customCategory: "knowledge" }, { id: "r5", title: "Veritasium", customCategory: "knowledge" }, { id: "r6", title: "TED", customCategory: "knowledge" }],
-  entertainment: [{ id: "r7", title: "MrBeast", customCategory: "entertainment" }, { id: "r8", title: "Mark Rober", customCategory: "entertainment" }, { id: "r9", title: "Mythbusters", customCategory: "entertainment" }],
+  entertainment: [{ id: "r7", title: "MrBeast", customCategory: "entertainment" }, { id: "r8", title: "Mark Rober", customCategory: "entertainment" }, { id: "r9", title: "Yes Theory", customCategory: "entertainment" }],
   humor:         [{ id: "r10", title: "Ryan George", customCategory: "humor" }, { id: "r11", title: "Gus Johnson", customCategory: "humor" }, { id: "r12", title: "Drew Gooden", customCategory: "humor" }],
-  music:         [{ id: "r13", title: "NPR Music", customCategory: "music" }, { id: "r14", title: "Tiny Desk Concerts", customCategory: "music" }, { id: "r15", title: "Colors", customCategory: "music" }],
+  music:         [{ id: "r13", title: "NPR Music", customCategory: "music" }, { id: "r14", title: "THE FIRST TAKE", customCategory: "music" }, { id: "r15", title: "Colors", customCategory: "music" }],
   lifestyle:     [{ id: "r16", title: "Joshua Weissman", customCategory: "food" }, { id: "r17", title: "Yes Theory", customCategory: "lifestyle" }, { id: "r18", title: "Pick Up Limes", customCategory: "lifestyle" }],
   news:          [{ id: "r22", title: "TLDR News", customCategory: "news" }, { id: "r23", title: "Vox", customCategory: "news" }, { id: "r24", title: "Johnny Harris", customCategory: "news" }],
   collector:     [{ id: "r25", title: "Tom Scott", customCategory: "knowledge" }, { id: "r26", title: "CGP Grey", customCategory: "knowledge" }, { id: "r27", title: "Wendover Productions", customCategory: "knowledge" }],
 };
-import { supabaseAdmin } from "@/lib/supabase";
-import type { Channel } from "@/types";
-import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: NextRequest) {
   try {
-    const { matchId } = await req.json();
+    const { matchId, accessToken: reqToken } = await req.json();
     const session = await getSession(matchId);
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
 
+    // Supabase에서 저장된 채널 + accessToken 가져오기
     const { data: sessionRow } = await supabaseAdmin
       .from("match_sessions")
-      .select("channels_a")
+      .select("channels_a, access_token")
       .eq("id", matchId)
       .single();
 
@@ -49,8 +46,14 @@ export async function POST(req: NextRequest) {
       usedMock = true;
     }
 
-    // 항상 재분석 (채널 분류 로직 업데이트 적용)
-    // TODO: 카테고리 분류 안정화 후 캐시 복원
+    // accessToken: 요청에서 받거나 세션에서
+    const accessToken = reqToken || sessionRow?.access_token || "";
+
+    // 채널 통계 + 좋아요 영상 병렬 수집
+    const [channelStatsRaw, likedVideos] = await Promise.all([
+      import("@/lib/youtube").then(m => m.fetchChannelStats(accessToken, channelsA)),
+      import("@/lib/youtube").then(m => m.fetchLikedVideos(accessToken)),
+    ]);
 
     const vecA = buildCategoryVector(channelsA);
     const tasteType = classifyTasteType(vecA);
@@ -58,6 +61,14 @@ export async function POST(req: NextRequest) {
     const topCategories = getTopCategories(vecA);
     const { type: friendType, reason: friendTypeReason } = getFriendType(tasteType);
     const { comment, commentType } = generateSoloComment(tasteType, diversityIndex);
+
+    // 심화 분석
+    const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsA);
+    const likedVideoInsight = analyzeLikedVideos(likedVideos, vecA);
+
+    // 큐레이션 추천 (이미 구독한 채널 제외)
+    const subscribedIds = new Set(channelsA.map(c => c.id));
+    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, "KR", 5);
 
     const channelScore = Math.min(30, Math.round(channelsA.length / 2));
     const categoryScore = diversityIndex;
@@ -77,10 +88,7 @@ export async function POST(req: NextRequest) {
       commentType,
       commonChannels: channelsA.slice(0, 5),
       recommendations: (TASTE_RECOMMENDATIONS[tasteType] || TASTE_RECOMMENDATIONS.collector).map(c => ({
-        ...c,
-        thumbnail: "",
-        categoryId: c.customCategory,
-        customCategory: c.customCategory as any,
+        ...c, thumbnail: "", categoryId: c.customCategory, customCategory: c.customCategory as any,
       })),
       userAVector: vecA,
       userBVector: vecA,
@@ -90,6 +98,9 @@ export async function POST(req: NextRequest) {
       friendTypeReason,
       topCategories,
       channelCount: channelsA.length,
+      channelStatsData: channelStatsData || undefined,
+      likedVideoInsight: likedVideoInsight || undefined,
+      curatedRecs,
       createdAt: new Date().toISOString(),
     };
 

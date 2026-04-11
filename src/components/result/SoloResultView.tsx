@@ -5,6 +5,9 @@ import { TasteTypeBadge } from "./TasteTypeBadge";
 import { DiversityGauge } from "./DiversityGauge";
 import { FriendTypeCard } from "./FriendTypeCard";
 import { RadarChartComponent } from "@/components/charts/RadarChart";
+import { ChannelRecordCard } from "./ChannelRecordCard";
+import { CountryDistribution } from "./CountryDistribution";
+import { LikedVideoInsightCard } from "./LikedVideoInsight";
 import type { MatchResult } from "@/types";
 import {
   calcAddictionLevel,
@@ -146,6 +149,30 @@ export function SoloResultView({ result }: Props) {
       {result.diversityIndex !== undefined && (
         <div className="animate-fade-in-delay-2">
           <DiversityGauge diversityIndex={result.diversityIndex} />
+        </div>
+      )}
+
+      {/* ⑦-a 구독 기록관 */}
+      {result.channelStatsData && (
+        <div className="animate-fade-in-delay-3">
+          <ChannelRecordCard data={result.channelStatsData} />
+        </div>
+      )}
+
+      {/* ⑦-b 국가 분포 + 미구독 추천 */}
+      {result.channelStatsData && (
+        <div className="animate-fade-in-delay-3">
+          <CountryDistribution
+            data={result.channelStatsData}
+            curatedRecs={result.curatedRecs}
+          />
+        </div>
+      )}
+
+      {/* ⑦-c 좋아요 영상 분석 */}
+      {result.likedVideoInsight && (
+        <div className="animate-fade-in-delay-3">
+          <LikedVideoInsightCard data={result.likedVideoInsight} />
         </div>
       )}
 

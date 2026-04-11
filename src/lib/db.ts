@@ -93,6 +93,9 @@ export async function saveResult(result: MatchResult): Promise<void> {
     friend_type_reason: result.friendTypeReason ?? null,
     top_categories: result.topCategories ?? null,
     channel_count: (result as any).channelCount ?? null,
+    channel_stats_data: (result as any).channelStatsData ?? null,
+    liked_video_insight: (result as any).likedVideoInsight ?? null,
+    curated_recs: (result as any).curatedRecs ?? null,
     created_at: result.createdAt,
   });
   if (error) throw new Error(`saveResult failed: ${error.message}`);
@@ -211,6 +214,9 @@ function rowToResult(row: any): MatchResult {
     friendTypeReason: row.friend_type_reason ?? undefined,
     topCategories: row.top_categories ?? undefined,
     channelCount: row.channel_count ?? undefined,
+    channelStatsData: row.channel_stats_data ?? undefined,
+    likedVideoInsight: row.liked_video_insight ?? undefined,
+    curatedRecs: row.curated_recs ?? undefined,
     createdAt: row.created_at,
   };
 }

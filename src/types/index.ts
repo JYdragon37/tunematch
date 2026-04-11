@@ -83,6 +83,9 @@ export interface MatchResult {
   friendTypeReason?: string;
   topCategories?: TopCategory[];
   channelCount?: number;  // 총 구독 채널 수
+  channelStatsData?: ChannelStatsData;
+  likedVideoInsight?: LikedVideoInsight;
+  curatedRecs?: CuratedChannel[];
 }
 
 export interface SavedResult {
@@ -94,6 +97,44 @@ export interface SavedResult {
 }
 
 export type CardStyle = "dark" | "light" | "color";
+
+// ─── Solo Analysis v2 Types ───
+
+export interface ChannelStatItem {
+  title: string;
+  subscriberCount: number;
+  formattedCount: string;
+  subscribedAt?: string;
+  yearsAgo?: number;
+  country?: string;
+}
+
+export interface ChannelStatsData {
+  topSubscriber: ChannelStatItem;
+  smallestSubscriber: ChannelStatItem;
+  oldestSub: ChannelStatItem;
+  newestSub: ChannelStatItem;
+  hiddenFanCount: number;
+  hiddenFanPercent: number;
+  countryDist: { code: string; label: string; percent: number }[];
+}
+
+export interface LikedVideoInsight {
+  topCategory: CategoryKey;
+  topCategoryLabel: string;
+  matchScore: number;
+  surpriseCategory?: CategoryKey;
+  surpriseCategoryLabel?: string;
+  totalLiked: number;
+}
+
+export interface CuratedChannel {
+  id: string;
+  title: string;
+  country: string;
+  category: string;
+  description: string;
+}
 
 // ─── Solo Taste Analysis Types ───
 

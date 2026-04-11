@@ -142,3 +142,140 @@ export async function fetchSubscribedChannels(
 
   return channels;
 }
+
+// ─── Channel Stats (channels.list) ───
+
+export interface ChannelStat {
+  id: string;
+  title: string;
+  subscriberCount: number;
+  country?: string;
+  subscribedAt?: string;  // subscription date (from subscription snippet)
+}
+
+function formatSubscriberCount(count: number): string {
+  if (count >= 100_000_000) return `${(count / 100_000_000).toFixed(1)}억`;
+  if (count >= 10_000) return `${(count / 10_000).toFixed(1)}만`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}천`;
+  return `${count}`;
+}
+
+export async function fetchChannelStats(
+  accessToken: string,
+  subscriptions: Channel[]  // 이미 가져온 구독 목록 (날짜 포함)
+): Promise<ChannelStat[]> {
+  if (!accessToken || accessToken.startsWith("mock-")) {
+    // Mock 데이터 반환
+    return subscriptions.slice(0, 10).map((ch, i) => ({
+      id: ch.id,
+      title: ch.title,
+      subscriberCount: Math.floor(Math.random() * 5_000_000) + 1_000,
+      country: i % 3 === 0 ? "US" : "KR",
+      subscribedAt: new Date(Date.now() - Math.random() * 5 * 365 * 24 * 3600 * 1000).toISOString(),
+    }));
+  }
+
+  // 상위 50개 channelId
+  const top50 = subscriptions.slice(0, 50).map(c => c.id).filter(Boolean);
+  if (top50.length === 0) return [];
+
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+    url.searchParams.set("part", "statistics,snippet");
+    url.searchParams.set("id", top50.join(","));
+    url.searchParams.set("maxResults", "50");
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!res.ok) {
+      console.error("[ChannelStats API Error]", await res.text());
+      return [];
+    }
+
+    const data = await res.json();
+    return (data.items || []).map((item: any) => ({
+      id: item.id,
+      title: item.snippet?.title || "",
+      subscriberCount: parseInt(item.statistics?.subscriberCount || "0", 10),
+      country: item.snippet?.country,
+    }));
+  } catch (err) {
+    console.error("[fetchChannelStats error]", err);
+    return [];
+  }
+}
+
+// ─── Liked Videos (videos.list) ───
+
+export interface LikedVideo {
+  id: string;
+  title: string;
+  categoryId: string;
+  customCategory: CategoryKey;
+}
+
+export async function fetchLikedVideos(accessToken: string): Promise<LikedVideo[]> {
+  if (!accessToken || accessToken.startsWith("mock-")) {
+    return [
+      { id: "v1", title: "Mock Liked 1", categoryId: "27", customCategory: "knowledge" },
+      { id: "v2", title: "Mock Liked 2", categoryId: "28", customCategory: "tech" },
+      { id: "v3", title: "Mock Liked 3", categoryId: "20", customCategory: "entertainment" },
+    ];
+  }
+
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("myRating", "like");
+    url.searchParams.set("maxResults", "50");
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!res.ok) {
+      console.error("[LikedVideos API Error]", await res.text());
+      return [];
+    }
+
+    const data = await res.json();
+    return (data.items || []).map((item: any) => {
+      const catId = item.snippet?.categoryId || "20";
+      return {
+        id: item.id,
+        title: item.snippet?.title || "",
+        categoryId: catId,
+        customCategory: classifyByKeyword(item.snippet?.title || "", item.snippet?.description || ""),
+      };
+    });
+  } catch (err) {
+    console.error("[fetchLikedVideos error]", err);
+    return [];
+  }
+}
+
+// ─── 통합 진입점 ───
+
+export interface YouTubeFullData {
+  channels: Channel[];
+  channelStats: ChannelStat[];
+  likedVideos: LikedVideo[];
+}
+
+export async function fetchYouTubeData(
+  accessToken: string,
+  slot: "A" | "B" = "A"
+): Promise<YouTubeFullData> {
+  // 구독 채널 먼저 가져오기 (channelStats에 필요)
+  const channels = await fetchSubscribedChannels(accessToken, slot);
+
+  // 나머지 병렬 처리
+  const [channelStats, likedVideos] = await Promise.all([
+    fetchChannelStats(accessToken, channels),
+    fetchLikedVideos(accessToken),
+  ]);
+
+  return { channels, channelStats, likedVideos };
+}
