@@ -292,9 +292,17 @@ export function getFriendType(tasteType: TasteType): { type: TasteType; reason: 
 
 // ─── Solo Analysis v2 ───
 
+function formatCount(n: number): string {
+  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+  if (n >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}천`;
+  return `${n}`;
+}
+
 export function analyzeChannelStats(
   stats: ChannelStat[],
-  subscriptions: Channel[]
+  subscriptions: Channel[],
+  likedVideos?: import("./youtube").LikedVideo[]
 ): ChannelStatsData | null {
   if (stats.length === 0) return null;
 
@@ -360,13 +368,6 @@ export function analyzeChannelStats(
     };
   }
 
-  function formatCount(n: number): string {
-    if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
-    if (n >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}천`;
-    return `${n}`;
-  }
-
   // ─── 추가 분석 ───
 
   // ① TOP 10 구독자 많은 채널
@@ -379,11 +380,20 @@ export function analyzeChannelStats(
     .slice(0, 10)
     .map(toItem);
 
-  // ③ 메가채널 TOP 10
-  const top10Mega = megaChannels
+  // ③ 메가채널 TOP 10 (유저 주요 국가 기준)
+  const dominantCountry = countryDist[0]?.code || "KR";
+  let top10Mega = [...megaChannels]
+    .filter(s => (s.country || "") === dominantCountry)
     .sort((a, b) => b.subscriberCount - a.subscriberCount)
     .slice(0, 10)
     .map(toItem);
+  // 해당 국가 채널이 3개 미만이면 전체로 폴백
+  if (top10Mega.length < 3) {
+    top10Mega = [...megaChannels]
+      .sort((a, b) => b.subscriberCount - a.subscriberCount)
+      .slice(0, 10)
+      .map(toItem);
+  }
 
   // ④ 연도별 구독 히스토리
   const yearCount: Record<number, number> = {};
@@ -502,6 +512,34 @@ export function analyzeChannelStats(
     .slice(0, 10)
     .map(toItem);
 
+  // ❤️ 좋아요 많이 누른 구독 채널 TOP 10
+  const top10LikedChannels: Array<{ title: string; subscriberCount: number; formattedCount: string; likeCount: number }> = [];
+  if (likedVideos && likedVideos.length > 0) {
+    const subIdSet = new Set(subscriptions.map(c => c.id));
+    const likeCounts = new Map<string, number>();
+    likedVideos.forEach(v => {
+      if (v.channelId && subIdSet.has(v.channelId)) {
+        likeCounts.set(v.channelId, (likeCounts.get(v.channelId) || 0) + 1);
+      }
+    });
+    const statsMap = new Map(withSubs.map(s => [s.id, s]));
+    Array.from(likeCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .forEach(([id, count]) => {
+        const stat = statsMap.get(id);
+        const sub = subscriptions.find(c => c.id === id);
+        if (stat || sub) {
+          top10LikedChannels.push({
+            title: stat?.title || sub?.title || id,
+            subscriberCount: stat?.subscriberCount || 0,
+            formattedCount: formatCount(stat?.subscriberCount || 0),
+            likeCount: count,
+          });
+        }
+      });
+  }
+
   return {
     topSubscriber: toItem(topSub),
     smallestSubscriber: toItem(smallestSub),
@@ -513,6 +551,7 @@ export function analyzeChannelStats(
     megaChannelPercent: Math.round((megaChannels.length / withSubs.length) * 100),
     avgSubscriberCount,
     countryDist,
+    dominantCountry,
     // 신규 필드
     top10Subscribers,
     top10Hidden,
@@ -528,6 +567,7 @@ export function analyzeChannelStats(
     top10OldestChannels,
     avgChannelAgeYears,
     earlyBirdChannels,
+    top10LikedChannels,
   } as any;
 }
 

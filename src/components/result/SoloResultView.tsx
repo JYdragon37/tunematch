@@ -176,12 +176,13 @@ export function SoloResultView({ result }: Props) {
         </div>
       )}
 
-      {/* ⑦-b 국가 분포 + 미구독 추천 */}
+      {/* ⑦-b 국가 분포 + 미구독 추천 + 트렌딩 */}
       {result.channelStatsData && (
         <div className="animate-fade-in-delay-3">
           <CountryDistribution
             data={result.channelStatsData}
             curatedRecs={result.curatedRecs}
+            trendingRecs={(result as any).trendingRecs}
           />
         </div>
       )}
@@ -229,35 +230,6 @@ export function SoloResultView({ result }: Props) {
         </div>
       )}
 
-      {/* ⑨ 추천 채널 (curatedRecs 우선, 없으면 recommendations) */}
-      {(() => {
-        const recs = (result as any).curatedRecs?.length
-          ? (result as any).curatedRecs
-          : result.recommendations;
-        if (!recs?.length) return null;
-        return (
-          <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-3">
-            <h3 className="font-bold text-gray-900 mb-1">📺 구독 안 한 추천 채널</h3>
-            <p className="text-xs text-gray-400 mb-4">내 취향 기반으로 아직 구독 안 한 채널 추천</p>
-            <div className="space-y-3">
-              {recs.map((ch: any) => (
-                <div key={ch.id} className="flex items-center gap-3 p-3 bg-muted rounded-2xl">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0">
-                    {ch.title[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{ch.title}</p>
-                    {ch.description && (
-                      <p className="text-xs text-gray-400 truncate">{ch.description}</p>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-300 shrink-0">{ch.country}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }

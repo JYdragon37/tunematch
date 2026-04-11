@@ -140,6 +140,8 @@ export interface CuratedChannel {
   country: string;
   category: string;
   description: string;
+  subscriberCount?: string;
+  isTrending?: boolean;
 }
 
 // ─── Solo Taste Analysis Types ───

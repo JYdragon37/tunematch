@@ -240,6 +240,7 @@ export interface LikedVideo {
   title: string;
   categoryId: string;
   customCategory: CategoryKey;
+  channelId?: string;
 }
 
 export async function fetchLikedVideos(accessToken: string): Promise<LikedVideo[]> {
@@ -274,6 +275,7 @@ export async function fetchLikedVideos(accessToken: string): Promise<LikedVideo[
         title: item.snippet?.title || "",
         categoryId: catId,
         customCategory: classifyByKeyword(item.snippet?.title || "", item.snippet?.description || ""),
+        channelId: item.snippet?.channelId || "",
       };
     });
   } catch (err) {

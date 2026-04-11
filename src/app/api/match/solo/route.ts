@@ -6,7 +6,7 @@ import {
 } from "@/lib/algorithm";
 import { fetchYouTubeData } from "@/lib/youtube";
 import { mockRecommendedChannels } from "@/data/mock-channels";
-import { getCuratedRecommendations } from "@/data/curated-channels";
+import { getCuratedRecommendations, getTrendingRecommendations } from "@/data/curated-channels";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Channel, TasteType } from "@/types";
 import { v4 as uuidv4 } from "uuid";
@@ -72,13 +72,15 @@ export async function POST(req: NextRequest) {
     const { comment, commentType } = generateSoloComment(tasteType, diversityIndex);
 
     // 심화 분석
-    const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsA);
+    const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsA, likedVideos);
     const subscribedChannelIds = new Set(channelsA.map((c: any) => c.id));
     const likedVideoInsight = analyzeLikedVideos(likedVideos, vecA, subscribedChannelIds);
 
     // 큐레이션 추천 (이미 구독한 채널 제외)
     const subscribedIds = new Set(channelsA.map(c => c.id));
-    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, "KR", 5);
+    const dominantCountry = (channelStatsData as any)?.dominantCountry || "KR";
+    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, dominantCountry, 5);
+    const trendingRecs = getTrendingRecommendations(tasteType, subscribedIds, dominantCountry, 5);
 
     const channelScore = Math.min(30, Math.round(channelsA.length / 2));
     const categoryScore = diversityIndex;
@@ -111,6 +113,7 @@ export async function POST(req: NextRequest) {
       channelStatsData: channelStatsData || undefined,
       likedVideoInsight: likedVideoInsight || undefined,
       curatedRecs,
+      trendingRecs,
       createdAt: new Date().toISOString(),
     };
 

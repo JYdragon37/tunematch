@@ -45,6 +45,11 @@ function Section({ emoji, title, children }: { emoji: string; title: string; chi
   );
 }
 
+const COUNTRY_LABELS: Record<string, string> = {
+  KR: "🇰🇷 한국", US: "🇺🇸 미국", JP: "🇯🇵 일본",
+  GB: "🇬🇧 영국", IN: "🇮🇳 인도", AU: "🇦🇺 호주", CA: "🇨🇦 캐나다",
+};
+
 export function ChannelRecordCard({ data, totalChannels }: Props) {
   const d = data as any;
   const yearDist: {year: number; count: number}[] = d.yearDist || [];
@@ -86,7 +91,7 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
 
       {/* ③ 메가채널 TOP 10 */}
       {d.top10Mega?.length > 0 && (
-        <Section emoji="🔥" title="메가채널 TOP 10 (구독자 100만+)">
+        <Section emoji="🔥" title={`메가채널 TOP 10 (${COUNTRY_LABELS[d.dominantCountry] || d.dominantCountry || "전체"} · 구독자 100만+)`}>
           <div className="divide-y divide-gray-100">
             {d.top10Mega.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} />
@@ -251,6 +256,24 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
           <div className="divide-y divide-gray-100">
             {d.earlyBirdChannels.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} showDate />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* ❤️ 좋아요 많이 누른 구독 채널 TOP 10 */}
+      {d.top10LikedChannels?.length > 0 && (
+        <Section emoji="❤️" title="내가 좋아요 가장 많이 누른 구독 채널 TOP 10">
+          <div className="divide-y divide-gray-100">
+            {d.top10LikedChannels.map((item: any, i: number) => (
+              <div key={item.title} className="flex items-center gap-3 py-2">
+                <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                  <p className="text-xs text-gray-400">구독자 {item.formattedCount}명</p>
+                </div>
+                <span className="text-xs font-bold text-primary shrink-0">❤️ {item.likeCount}</span>
+              </div>
             ))}
           </div>
         </Section>
