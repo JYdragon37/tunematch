@@ -62,33 +62,33 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
         )}
       </div>
 
-      {/* ① 구독자 TOP 5 */}
-      {d.top5Subscribers?.length > 0 && (
-        <Section emoji="👑" title="구독자 많은 채널 TOP 5">
+      {/* ① 구독자 TOP 10 */}
+      {d.top10Subscribers?.length > 0 && (
+        <Section emoji="👑" title="구독자 많은 채널 TOP 10">
           <div className="divide-y divide-gray-100">
-            {d.top5Subscribers.map((item: ChannelStatItem, i: number) => (
+            {d.top10Subscribers.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} />
             ))}
           </div>
         </Section>
       )}
 
-      {/* ② 소채널 TOP 5 */}
-      {d.top5Hidden?.length > 0 && (
-        <Section emoji="🤍" title="내가 응원하는 소채널 TOP 5">
+      {/* ② 소채널 TOP 10 */}
+      {d.top10Hidden?.length > 0 && (
+        <Section emoji="🤍" title="내가 응원하는 소채널 TOP 10">
           <div className="divide-y divide-gray-100">
-            {d.top5Hidden.map((item: ChannelStatItem, i: number) => (
+            {d.top10Hidden.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} />
             ))}
           </div>
         </Section>
       )}
 
-      {/* ③ 메가채널 TOP 5 */}
-      {d.top5Mega?.length > 0 && (
-        <Section emoji="🔥" title="메가채널 TOP 5 (구독자 100만+)">
+      {/* ③ 메가채널 TOP 10 */}
+      {d.top10Mega?.length > 0 && (
+        <Section emoji="🔥" title="메가채널 TOP 10 (구독자 100만+)">
           <div className="divide-y divide-gray-100">
-            {d.top5Mega.map((item: ChannelStatItem, i: number) => (
+            {d.top10Mega.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} />
             ))}
           </div>
@@ -178,22 +178,22 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
         </div>
       )}
 
-      {/* ⑩ 오랜 인연 TOP 5 */}
-      {d.top5Oldest?.length > 0 && (
-        <Section emoji="🏅" title="오랜 인연 TOP 5 (가장 오래된 구독)">
+      {/* ⑩ 오랜 인연 TOP 10 */}
+      {d.top10Oldest?.length > 0 && (
+        <Section emoji="🏅" title="오랜 인연 TOP 10 (가장 오래된 구독)">
           <div className="divide-y divide-gray-100">
-            {d.top5Oldest.map((item: ChannelStatItem, i: number) => (
+            {d.top10Oldest.map((item: ChannelStatItem, i: number) => (
               <ChannelRow key={item.title} rank={i + 1} item={item} showDate />
             ))}
           </div>
         </Section>
       )}
 
-      {/* 📺 영상 많이 올린 채널 TOP 5 */}
-      {d.top5ByVideoCount?.length > 0 && (
-        <Section emoji="📺" title="영상 가장 많이 올린 채널 TOP 5">
+      {/* 📺 영상 많이 올린 채널 TOP 10 */}
+      {d.top10ByVideoCount?.length > 0 && (
+        <Section emoji="📺" title="영상 가장 많이 올린 채널 TOP 10">
           <div className="divide-y divide-gray-100">
-            {d.top5ByVideoCount.map((item: any, i: number) => (
+            {d.top10ByVideoCount.map((item: any, i: number) => (
               <div key={item.title} className="flex items-center gap-3 py-2">
                 <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
@@ -208,11 +208,11 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
         </Section>
       )}
 
-      {/* 🏃 가장 오래된 채널 TOP 5 (채널 개설일) */}
-      {d.top5OldestChannels?.length > 0 && (
-        <Section emoji="🏺" title="가장 오래된 유튜브 채널 TOP 5">
+      {/* 🏃 가장 오래된 채널 TOP 10 (채널 개설일) */}
+      {d.top10OldestChannels?.length > 0 && (
+        <Section emoji="🏺" title="가장 오래된 유튜브 채널 TOP 10">
           <div className="divide-y divide-gray-100">
-            {d.top5OldestChannels.map((item: any, i: number) => (
+            {d.top10OldestChannels.map((item: any, i: number) => (
               <div key={item.title} className="flex items-center gap-3 py-2">
                 <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">

@@ -126,7 +126,7 @@ export interface LikedVideoInsight {
   surpriseCategory?: CategoryKey;
   surpriseCategoryLabel?: string;
   totalLiked: number;
-  top5LikedCategories?: Array<{
+  top10LikedCategories?: Array<{
     category: CategoryKey;
     label: string;
     count: number;

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { signIn, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 
 const COLLECT_INFO = [
@@ -19,8 +19,7 @@ export default function ConnectPage() {
     setLoading(true);
     setError(null);
     try {
-      // 기존 세션 초기화 → 항상 계정 선택창 + YouTube scope 동의 강제
-      await signOut({ redirect: false });
+      // auth.ts의 prompt: "select_account consent"로 매번 계정 선택 + 동의 강제
       await signIn("google", { callbackUrl: "/connect/callback" });
     } catch {
       setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");

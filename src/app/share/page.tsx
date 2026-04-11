@@ -1,6 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { copyToClipboard, getMatchUrl } from "@/lib/utils";
@@ -8,6 +9,7 @@ import { shareKakao } from "@/lib/kakao";
 
 function ShareContent() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const matchId = searchParams.get("matchId") || "";
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -49,10 +51,11 @@ function ShareContent() {
   const handleSoloAnalysis = async () => {
     setSoloLoading(true);
     try {
+      const accessToken = (session as any)?.accessToken || "";
       const res = await fetch("/api/match/solo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchId }),
+        body: JSON.stringify({ matchId, accessToken }),
       });
       if (!res.ok) throw new Error("분석 실패");
       router.push(`/result/${matchId}`);

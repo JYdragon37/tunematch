@@ -369,20 +369,20 @@ export function analyzeChannelStats(
 
   // ─── 추가 분석 ───
 
-  // ① TOP 5 구독자 많은 채널
-  const top5Subscribers = sorted.slice(0, 5).map(toItem);
+  // ① TOP 10 구독자 많은 채널
+  const top10Subscribers = sorted.slice(0, 10).map(toItem);
 
-  // ② 소채널 TOP 5 (구독자 적은 순)
-  const top5Hidden = [...withSubs]
+  // ② 소채널 TOP 10 (구독자 적은 순)
+  const top10Hidden = [...withSubs]
     .filter(s => s.subscriberCount > 0)
     .sort((a, b) => a.subscriberCount - b.subscriberCount)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(toItem);
 
-  // ③ 메가채널 TOP 5
-  const top5Mega = megaChannels
+  // ③ 메가채널 TOP 10
+  const top10Mega = megaChannels
     .sort((a, b) => b.subscriberCount - a.subscriberCount)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(toItem);
 
   // ④ 연도별 구독 히스토리
@@ -437,14 +437,14 @@ export function analyzeChannelStats(
     s.subscribedAt && new Date(s.subscribedAt).getTime() > oneYearAgo
   ).length;
 
-  // ⑩ 오랜 인연 (구독 날짜 오래된 순 TOP 5)
-  const top5Oldest = withDates.slice(0, 5).map(toItem);
+  // ⑩ 오랜 인연 (구독 날짜 오래된 순 TOP 10)
+  const top10Oldest = withDates.slice(0, 10).map(toItem);
 
-  // 📺 영상 가장 많이 올린 채널 TOP 5
-  const top5ByVideoCount = [...withSubs]
+  // 📺 영상 가장 많이 올린 채널 TOP 10
+  const top10ByVideoCount = [...withSubs]
     .filter(s => (s as any).videoCount > 0)
     .sort((a, b) => ((b as any).videoCount || 0) - ((a as any).videoCount || 0))
-    .slice(0, 5)
+    .slice(0, 10)
     .map(s => ({ ...toItem(s), videoCount: (s as any).videoCount as number }));
 
   // 🔤 채널명 자주 나오는 키워드 TOP 10
@@ -463,14 +463,14 @@ export function analyzeChannelStats(
     .slice(0, 10)
     .map(([word, count]) => ({ word, count }));
 
-  // 🏃 가장 오래된 채널 TOP 5 (채널 개설일 기준)
-  const top5OldestChannels = [...withSubs]
+  // 🏃 가장 오래된 채널 TOP 10 (채널 개설일 기준)
+  const top10OldestChannels = [...withSubs]
     .filter(s => (s as any).channelCreatedAt)
     .sort((a, b) =>
       new Date((a as any).channelCreatedAt).getTime() -
       new Date((b as any).channelCreatedAt).getTime()
     )
-    .slice(0, 5)
+    .slice(0, 10)
     .map(s => ({
       ...toItem(s),
       channelCreatedAt: (s as any).channelCreatedAt as string,
@@ -499,7 +499,7 @@ export function analyzeChannelStats(
       s.subscriberCount >= 1_000_000
     )
     .sort((a, b) => b.subscriberCount - a.subscriberCount)
-    .slice(0, 5)
+    .slice(0, 10)
     .map(toItem);
 
   return {
@@ -514,18 +514,18 @@ export function analyzeChannelStats(
     avgSubscriberCount,
     countryDist,
     // 신규 필드
-    top5Subscribers,
-    top5Hidden,
-    top5Mega,
+    top10Subscribers,
+    top10Hidden,
+    top10Mega,
     yearDist,
     subSpeedDays,
     subscriberBands: bands,
     countryRepresentatives,
     recentSubCount,
-    top5Oldest,
-    top5ByVideoCount,
+    top10Oldest,
+    top10ByVideoCount,
     topKeywords,
-    top5OldestChannels,
+    top10OldestChannels,
     avgChannelAgeYears,
     earlyBirdChannels,
   } as any;
@@ -568,10 +568,10 @@ export function analyzeLikedVideos(
     lifestyle: "라이프스타일", music: "음악", news: "뉴스/시사", food: "음식/요리", tech: "테크",
   };
 
-  // 좋아요 카테고리 TOP 5
-  const top5LikedCategories = (Object.entries(likeCounts) as [CategoryKey, number][])
+  // 좋아요 카테고리 TOP 10
+  const top10LikedCategories = (Object.entries(likeCounts) as [CategoryKey, number][])
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    .slice(0, 10)
     .map(([cat, count]) => ({
       category: cat,
       label: CATEGORY_LABELS_LOCAL[cat] || cat,
@@ -592,7 +592,7 @@ export function analyzeLikedVideos(
     surpriseCategory,
     surpriseCategoryLabel: surpriseCategory ? CATEGORY_LABELS_LOCAL[surpriseCategory] : undefined,
     totalLiked: likedVideos.length,
-    top5LikedCategories,
+    top10LikedCategories,
   };
 }
 
