@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
-import { MOCK_USER_A } from "@/data/mock-channels";
+import { useEffect } from "react";
 
 const COLLECT_INFO = [
   { icon: "✅", text: "구독 채널 목록" },
@@ -14,42 +15,67 @@ const COLLECT_INFO = [
 
 export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  const handleGoogleConnect = async () => {
+  // 이미 세션이 있으면 매칭 생성으로 바로 진행
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      createMatch();
+    }
+  }, [status]);
+
+  const createMatch = async () => {
     setLoading(true);
     try {
-      // Mock 모드: 실제 OAuth 없이 테스트 유저로 바로 진행
-      // 실제 구현 시: await signIn("google") from next-auth/react
-      const mockAccessToken = "mock-youtube-access-token";
-
-      // 매칭 세션 생성
+      const accessToken = (session as any)?.accessToken;
       const res = await fetch("/api/match/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: MOCK_USER_A.id,
-          userName: MOCK_USER_A.name,
-          email: MOCK_USER_A.email,
-          accessToken: mockAccessToken,
+          userId: (session as any)?.googleId || session?.user?.email,
+          userName: session?.user?.name || "사용자",
+          email: session?.user?.email || "",
+          accessToken: accessToken || "",
         }),
       });
 
       if (!res.ok) throw new Error("세션 생성 실패");
       const { matchId } = await res.json();
-
       router.push(`/share?matchId=${matchId}`);
-    } catch (error) {
-      console.error(error);
-      alert("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
+    } catch (err) {
+      setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
       setLoading(false);
     }
   };
 
+  const handleGoogleConnect = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await signIn("google", { callbackUrl: "/connect" });
+    } catch {
+      setError("Google 로그인에 실패했습니다.");
+      setLoading(false);
+    }
+  };
+
+  if (status === "loading" || (status === "authenticated" && loading)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-10 h-10 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-text-secondary text-sm">
+            {status === "authenticated" ? "구독 채널 분석 중..." : "로딩 중..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background">
-      {/* 상단 네비 */}
       <div className="max-w-md mx-auto px-5 py-4">
         <Link href="/" className="text-text-secondary hover:text-text-primary text-sm flex items-center gap-1">
           ← 뒤로
@@ -57,7 +83,6 @@ export default function ConnectPage() {
       </div>
 
       <div className="max-w-md mx-auto px-5 pt-4 pb-20">
-        {/* 로고 */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <span className="text-3xl">🎵</span>
@@ -71,7 +96,6 @@ export default function ConnectPage() {
           내 유튜브 취향을 분석할게요
         </h2>
 
-        {/* 수집 정보 카드 */}
         <div className="bg-white rounded-3xl p-6 border border-border mb-6">
           <h3 className="font-semibold text-text-primary mb-4 text-sm">수집하는 정보</h3>
           <div className="space-y-3">
@@ -86,7 +110,6 @@ export default function ConnectPage() {
           </div>
         </div>
 
-        {/* 안심 문구 */}
         <div className="text-center mb-8">
           <p className="text-sm text-text-secondary leading-relaxed">
             분석 후 즉시 삭제되며<br />
@@ -94,7 +117,12 @@ export default function ConnectPage() {
           </p>
         </div>
 
-        {/* Google 연동 버튼 */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
         <Button
           variant="google"
           size="lg"
@@ -112,7 +140,6 @@ export default function ConnectPage() {
           Google 계정으로 연동하기
         </Button>
 
-        {/* 개인정보 동의 */}
         <p className="text-xs text-text-muted text-center">
           연동하면{" "}
           <a href="#" className="underline hover:text-text-secondary">개인정보처리방침</a>에

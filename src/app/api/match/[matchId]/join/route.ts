@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockStore } from "@/lib/mock-store";
+import { getSession, updateSession, saveResult } from "@/lib/db";
 import { fetchSubscribedChannels } from "@/lib/youtube";
 import { analyzeCompatibility } from "@/lib/algorithm";
 import { sendEmail, buildNotificationEmail } from "@/lib/email";
 import { mockRecommendedChannels } from "@/data/mock-channels";
 import { v4 as uuidv4 } from "uuid";
+import type { Channel } from "@/types";
 
 export async function POST(
   req: NextRequest,
@@ -12,18 +13,36 @@ export async function POST(
 ) {
   try {
     const { userId, userName, accessToken } = await req.json();
-    const session = mockStore.getSession(params.matchId);
+    const session = await getSession(params.matchId);
 
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
     if (session.status === "expired") return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
     if (session.status === "done") return NextResponse.json({ error: "이미 완료된 매칭" }, { status: 409 });
 
-    // B 유저 채널 수집
     const channelsB = await fetchSubscribedChannels(accessToken, "B");
-    const channelsA = (mockStore as any)._channelsA?.[params.matchId] || [];
 
-    // 분석 실행
-    mockStore.updateSession(params.matchId, { status: "analyzing", userBId: userId || uuidv4(), userBName: userName });
+    // Supabase에서 A의 채널 데이터 가져오기
+    const { supabaseAdmin } = await import("@/lib/supabase");
+    const { data: sessionRow } = await supabaseAdmin
+      .from("match_sessions")
+      .select("channels_a")
+      .eq("id", params.matchId)
+      .single();
+
+    let channelsA: Channel[] = [];
+    if (sessionRow?.channels_a) {
+      try {
+        channelsA = JSON.parse(sessionRow.channels_a);
+      } catch {
+        channelsA = [];
+      }
+    }
+
+    await updateSession(params.matchId, {
+      status: "analyzing",
+      userBId: userId || uuidv4(),
+      userBName: userName,
+    });
 
     const result = analyzeCompatibility(
       params.matchId,
@@ -34,10 +53,9 @@ export async function POST(
       mockRecommendedChannels
     );
 
-    mockStore.saveResult(result);
-    mockStore.updateSession(params.matchId, { status: "done", resultId: result.id });
+    await saveResult(result);
+    await updateSession(params.matchId, { status: "done", resultId: result.id });
 
-    // A에게 이메일 알림
     const resultUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/result/${params.matchId}`;
     const emailContent = buildNotificationEmail({
       aName: session.userAName,

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockStore } from "@/lib/mock-store";
+import { getSession, getResultBySession } from "@/lib/db";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { matchId: string } }
 ) {
-  const result = mockStore.getResultBySession(params.matchId);
+  const result = await getResultBySession(params.matchId);
   if (!result) {
-    const session = mockStore.getSession(params.matchId);
+    const session = await getSession(params.matchId);
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
     return NextResponse.json({ status: session.status, result: null });
   }
