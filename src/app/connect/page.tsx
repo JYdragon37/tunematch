@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 
 const COLLECT_INFO = [
@@ -15,44 +14,18 @@ const COLLECT_INFO = [
 export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data: session } = useSession();
-  const router = useRouter();
-
-  // 자동 리다이렉트 없음 — 항상 버튼 클릭으로만 시작
 
   const handleGoogleConnect = async () => {
     setLoading(true);
     setError(null);
     try {
-      const accessToken = (session as any)?.accessToken;
-
-      if (session && accessToken) {
-        // 유효한 YouTube 토큰이 있으면 바로 매칭 생성
-        await createMatch(session, accessToken);
-      } else {
-        // 토큰 없거나 미로그인 → OAuth 재인증
-        await signIn("google", { callbackUrl: "/connect/callback" } as any);
-      }
+      // 기존 세션 초기화 → 항상 계정 선택창 + YouTube scope 동의 강제
+      await signOut({ redirect: false });
+      await signIn("google", { callbackUrl: "/connect/callback" });
     } catch {
       setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
       setLoading(false);
     }
-  };
-
-  const createMatch = async (sess: any, accessToken: string) => {
-    const res = await fetch("/api/match/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: (sess as any)?.googleId || sess?.user?.email,
-        userName: sess?.user?.name || "사용자",
-        email: sess?.user?.email || "",
-        accessToken,
-      }),
-    });
-    if (!res.ok) throw new Error("세션 생성 실패");
-    const { matchId } = await res.json();
-    router.push(`/share?matchId=${matchId}`);
   };
 
   return (
