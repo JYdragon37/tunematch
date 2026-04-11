@@ -92,6 +92,7 @@ export async function saveResult(result: MatchResult): Promise<void> {
     friend_type: result.friendType ?? null,
     friend_type_reason: result.friendTypeReason ?? null,
     top_categories: result.topCategories ?? null,
+    channel_count: (result as any).channelCount ?? null,
     created_at: result.createdAt,
   });
   if (error) throw new Error(`saveResult failed: ${error.message}`);
@@ -209,6 +210,7 @@ function rowToResult(row: any): MatchResult {
     friendType: row.friend_type ?? undefined,
     friendTypeReason: row.friend_type_reason ?? undefined,
     topCategories: row.top_categories ?? undefined,
+    channelCount: row.channel_count ?? undefined,
     createdAt: row.created_at,
   };
 }

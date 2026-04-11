@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
       friendType,
       friendTypeReason,
       topCategories,
+      channelCount: channelsA.length,
       createdAt: new Date().toISOString(),
     };
 

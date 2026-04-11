@@ -6,3 +6,4 @@ ALTER TABLE match_results ADD COLUMN IF NOT EXISTS diversity_index INTEGER;
 ALTER TABLE match_results ADD COLUMN IF NOT EXISTS friend_type TEXT;
 ALTER TABLE match_results ADD COLUMN IF NOT EXISTS friend_type_reason TEXT;
 ALTER TABLE match_results ADD COLUMN IF NOT EXISTS top_categories JSONB;
+ALTER TABLE match_results ADD COLUMN IF NOT EXISTS channel_count INTEGER;

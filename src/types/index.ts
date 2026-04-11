@@ -82,6 +82,7 @@ export interface MatchResult {
   friendType?: TasteType;
   friendTypeReason?: string;
   topCategories?: TopCategory[];
+  channelCount?: number;  // 총 구독 채널 수
 }
 
 export interface SavedResult {
