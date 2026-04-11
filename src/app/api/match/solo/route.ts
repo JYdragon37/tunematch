@@ -107,6 +107,22 @@ export async function POST(req: NextRequest) {
     await saveResult(result as any);
     await updateSession(matchId, { status: "done", resultId: result.id });
 
+    // Telegram으로 분석 결과 전송 (비동기, 실패해도 무관)
+    import("@/lib/telegram").then(({ sendMessage, formatSoloResult }) => {
+      const msg = formatSoloResult({
+        userAName: result.userAName,
+        tasteType: result.tasteType,
+        commentType: result.commentType,
+        comment: result.comment,
+        diversityIndex: result.diversityIndex,
+        channelCount: result.channelCount,
+        topCategories: result.topCategories,
+        channelStatsData: result.channelStatsData as any,
+        likedVideoInsight: result.likedVideoInsight as any,
+      });
+      sendMessage(msg).catch(console.error);
+    }).catch(console.error);
+
     return NextResponse.json({ resultId: result.id });
   } catch (error) {
     console.error("[match/solo error]", error);
