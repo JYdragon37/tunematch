@@ -21,6 +21,7 @@ import {
 
 interface Props {
   result: MatchResult;
+  hideInvite?: boolean;
 }
 
 const TOP_CATEGORY_COLORS = ["#FF4D00", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"];
@@ -30,7 +31,7 @@ function isMockResult(result: MatchResult): boolean {
   return result.commonChannels.some((c) => MOCK_CHANNEL_IDS.has(c.id));
 }
 
-export function SoloResultView({ result }: Props) {
+export function SoloResultView({ result, hideInvite = false }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const usingMock = isMockResult(result);
@@ -232,8 +233,10 @@ export function SoloResultView({ result }: Props) {
         </div>
       )}
 
-      {/* ⑨ 친구 초대 */}
-      <InviteSection matchId={result.matchSessionId} userName={result.userAName} />
+      {/* ⑨ 친구 초대 (hideInvite=true면 숨김 - B의 solo 페이지에서 사용) */}
+      {!hideInvite && (
+        <InviteSection matchId={result.matchSessionId} userName={result.userAName} />
+      )}
 
     </div>
   );

@@ -118,7 +118,8 @@ export async function POST(req: NextRequest) {
     };
 
     await saveResult(result as any);
-    await updateSession(matchId, { status: "done", resultId: result.id });
+    // 솔로 분석은 status를 "done"으로 바꾸지 않음 → 친구가 나중에 join 가능
+    await updateSession(matchId, { resultId: result.id });
 
     // Telegram으로 분석 결과 전송 (비동기, 실패해도 무관)
     import("@/lib/telegram").then(({ sendMessage, formatSoloResult }) => {

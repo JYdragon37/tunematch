@@ -67,6 +67,28 @@ export async function updateSession(
   if (error) throw new Error(`updateSession failed: ${error.message}`);
 }
 
+export async function updateSessionChannelsB(
+  id: string,
+  data: {
+    userBId: string;
+    userBName: string;
+    channelsBJson: string;
+    bSoloResult: object;
+  }
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("match_sessions")
+    .update({
+      user_b_id: data.userBId,
+      user_b_name: data.userBName,
+      channels_b: data.channelsBJson,
+      b_solo_result: data.bSoloResult,
+      status: "b_joined",
+    })
+    .eq("id", id);
+  if (error) throw new Error(`updateSessionChannelsB failed: ${error.message}`);
+}
+
 // ─── Match Results ───
 
 export async function saveResult(result: MatchResult): Promise<void> {
@@ -102,14 +124,17 @@ export async function saveResult(result: MatchResult): Promise<void> {
 }
 
 export async function getResultBySession(sessionId: string): Promise<MatchResult | null> {
-  const { data: row, error } = await supabaseAdmin
+  const { data: rows, error } = await supabaseAdmin
     .from("match_results")
     .select()
     .eq("match_session_id", sessionId)
-    .single();
+    .order("created_at", { ascending: false });
 
-  if (error || !row) return null;
-  return rowToResult(row);
+  if (error || !rows || rows.length === 0) return null;
+
+  // 비교 결과 우선 반환 (솔로 결과는 user_b_name이 "나의 취향 분석")
+  const comparison = rows.find((r: any) => r.user_b_name !== "나의 취향 분석");
+  return rowToResult(comparison || rows[0]);
 }
 
 export async function getResult(id: string): Promise<MatchResult | null> {

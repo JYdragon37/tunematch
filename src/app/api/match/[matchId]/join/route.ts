@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, updateSession, saveResult } from "@/lib/db";
-import { fetchSubscribedChannels } from "@/lib/youtube";
-import { analyzeCompatibility } from "@/lib/algorithm";
-import { sendEmail, buildNotificationEmail } from "@/lib/email";
-import { mockRecommendedChannels } from "@/data/mock-channels";
+import { getSession, updateSessionChannelsB } from "@/lib/db";
+import { fetchSubscribedChannels, fetchChannelStats, fetchLikedVideos } from "@/lib/youtube";
+import {
+  buildCategoryVector, classifyTasteType, calcDiversityIndex, getTopCategories,
+  getFriendType, generateSoloComment, analyzeChannelStats, analyzeLikedVideos,
+} from "@/lib/algorithm";
+import { getCuratedRecommendations, getTrendingRecommendations } from "@/data/curated-channels";
 import { v4 as uuidv4 } from "uuid";
 import type { Channel } from "@/types";
 
@@ -19,63 +21,71 @@ export async function POST(
     if (session.status === "expired") return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
     if (session.status === "done") return NextResponse.json({ error: "이미 완료된 매칭" }, { status: 409 });
 
-    const channelsB = await fetchSubscribedChannels(accessToken, "B");
+    // ① B의 구독 채널 수집
+    const channelsB: Channel[] = await fetchSubscribedChannels(accessToken || "", "B");
 
-    // Supabase에서 A의 채널 데이터 가져오기
-    const { supabaseAdmin } = await import("@/lib/supabase");
-    const { data: sessionRow, error: sessionRowError } = await supabaseAdmin
-      .from("match_sessions")
-      .select("channels_a")
-      .eq("id", params.matchId)
-      .single();
+    // ② B의 솔로 분석 (채널통계 + 좋아요 병렬)
+    const [channelStatsRaw, likedVideos] = await Promise.all([
+      fetchChannelStats(accessToken || "", channelsB),
+      fetchLikedVideos(accessToken || ""),
+    ]);
 
-    if (sessionRowError) {
-      console.error("[match/join] channels_a 조회 실패:", sessionRowError.message);
-    }
+    const vecB = buildCategoryVector(channelsB);
+    const tasteType = classifyTasteType(vecB);
+    const diversityIndex = calcDiversityIndex(vecB);
+    const topCategories = getTopCategories(vecB);
+    const { type: friendType, reason: friendTypeReason } = getFriendType(tasteType);
+    const { comment, commentType } = generateSoloComment(tasteType, diversityIndex);
 
-    let channelsA: Channel[] = [];
-    if (sessionRow?.channels_a) {
-      try {
-        channelsA = JSON.parse(sessionRow.channels_a);
-      } catch (parseErr) {
-        console.error("[match/join] channels_a JSON 파싱 실패:", parseErr);
-      }
-    }
+    const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsB, likedVideos);
+    const subscribedChannelIds = new Set(channelsB.map((c) => c.id));
+    const likedVideoInsight = analyzeLikedVideos(likedVideos, vecB, subscribedChannelIds);
 
-    if (channelsA.length === 0) {
-      return NextResponse.json({
-        error: "CHANNELS_UNAVAILABLE",
-        message: "A 유저의 채널 데이터를 찾을 수 없습니다. A 유저가 다시 연동해야 합니다."
-      }, { status: 422 });
-    }
+    const dominantCountry = (channelStatsData as any)?.dominantCountry || "KR";
+    const subscribedIds = new Set(channelsB.map((c) => c.id));
+    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, dominantCountry, 5);
+    const trendingRecs = getTrendingRecommendations(tasteType, subscribedIds, dominantCountry, 5);
 
-    await updateSession(params.matchId, {
-      status: "analyzing",
+    const channelScore = Math.min(30, Math.round(channelsB.length / 2));
+    const bSoloResult = {
+      id: uuidv4(),
+      matchSessionId: params.matchId,
+      userAName: userName || "사용자B",
+      userBName: "나의 취향 분석",
+      totalScore: Math.min(100, channelScore + Math.round(diversityIndex * 0.7)),
+      channelScore,
+      categoryScore: diversityIndex,
+      curiosityScore: Math.round((vecB.knowledge + vecB.tech) * 100),
+      humorScore: Math.round(vecB.humor * 100),
+      patternScore: Math.round((vecB.lifestyle + vecB.music) * 100),
+      comment,
+      commentType,
+      commonChannels: channelsB.slice(0, 5),
+      recommendations: [],
+      userAVector: vecB,
+      userBVector: vecB,
+      tasteType,
+      diversityIndex,
+      friendType,
+      friendTypeReason,
+      topCategories,
+      channelCount: channelsB.length,
+      channelStatsData: channelStatsData || undefined,
+      likedVideoInsight: likedVideoInsight || undefined,
+      curatedRecs,
+      trendingRecs,
+      createdAt: new Date().toISOString(),
+    };
+
+    // ③ DB에 channels_b + b_solo_result 저장, status → b_joined
+    await updateSessionChannelsB(params.matchId, {
       userBId: userId || uuidv4(),
-      userBName: userName,
+      userBName: userName || "사용자B",
+      channelsBJson: JSON.stringify(channelsB),
+      bSoloResult,
     });
 
-    const result = analyzeCompatibility(
-      params.matchId,
-      session.userAName,
-      userName || "사용자B",
-      channelsA,
-      channelsB,
-      mockRecommendedChannels
-    );
-
-    await saveResult(result);
-    await updateSession(params.matchId, { status: "done", resultId: result.id });
-
-    const resultUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/result/${params.matchId}`;
-    const emailContent = buildNotificationEmail({
-      aName: session.userAName,
-      bName: userName || "사용자B",
-      resultUrl,
-    });
-    await sendEmail({ ...emailContent, to: session.notifyEmail });
-
-    return NextResponse.json({ success: true, resultId: result.id });
+    return NextResponse.json({ soloResult: bSoloResult, userAName: session.userAName });
   } catch (error) {
     console.error("[match/join error]", error);
     return NextResponse.json({ error: "분석 실패" }, { status: 500 });

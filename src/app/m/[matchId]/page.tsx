@@ -35,6 +35,10 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
     if (status === "authenticated" && session && matchData && matchData.status === "waiting") {
       handleJoin();
     }
+    if (status === "authenticated" && session && matchData && matchData.status === "b_joined") {
+      // 이미 B가 join했으면 solo 페이지로
+      router.push(`/m/${params.matchId}/solo`);
+    }
   }, [status, session, matchData]);
 
   const fetchMatchData = async () => {
@@ -56,21 +60,33 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
     if (!session) return;
     setConnecting(true);
     try {
-      const accessToken = (session as any)?.accessToken;
+      const accessToken = (session as any)?.accessToken || "";
       const res = await fetch(`/api/match/${params.matchId}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: (session as any)?.googleId || session?.user?.email,
           userName: session?.user?.name || "사용자B",
-          accessToken: accessToken || "",
+          accessToken,
         }),
       });
-      if (!res.ok) throw new Error("연동 실패");
-      router.push(`/result/${params.matchId}`);
-    } catch {
-      setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
-    } finally {
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "연동 실패");
+      }
+
+      const data = await res.json();
+      // B 솔로 결과를 sessionStorage에 저장 후 solo 페이지로 이동
+      if (data.soloResult) {
+        sessionStorage.setItem(`solo_${params.matchId}`, JSON.stringify({
+          result: data.soloResult,
+          userAName: data.userAName,
+        }));
+      }
+      router.push(`/m/${params.matchId}/solo`);
+    } catch (e: any) {
+      setError(e.message || "연동 중 오류가 발생했습니다. 다시 시도해주세요.");
       setConnecting(false);
     }
   };
@@ -90,7 +106,7 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-text-secondary text-sm">
-            {connecting ? "취향 분석 중..." : "로딩 중..."}
+            {connecting ? "취향 분석 중... (잠시 기다려주세요)" : "로딩 중..."}
           </p>
         </div>
       </div>
@@ -126,6 +142,7 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
           <p className="text-xl font-bold text-text-primary">궁합 분석 초대장 🎯</p>
         </div>
 
+        {/* 흐릿한 점수 미리보기 */}
         <div className="bg-white rounded-3xl p-6 border border-border relative overflow-hidden">
           <div className="absolute inset-0 backdrop-blur-sm bg-white/50 flex items-center justify-center z-10 rounded-3xl">
             <div className="text-center">
@@ -139,11 +156,16 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-text-secondary">
-            내 유튜브를 연동하면<br />
-            <strong className="text-text-primary">바로 결과를 볼 수 있어요</strong>
-          </p>
+        {/* 플로우 안내 */}
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2">
+          <p className="text-xs font-bold text-primary mb-2">연동하면 이렇게 진행돼요</p>
+          {[
+            "① 내 유튜브 취향 분석 먼저 확인",
+            `② ${matchData?.userAName || "친구"}님과 궁합 비교`,
+            "③ 취향 싱크로율 + 공통 채널 공개",
+          ].map((step, i) => (
+            <p key={i} className="text-xs text-gray-600">{step}</p>
+          ))}
         </div>
 
         <Button variant="google" size="lg" fullWidth onClick={handleConnect} loading={connecting}>
@@ -153,7 +175,7 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Google 계정으로 연동하기
+          Google로 내 취향 분석하기
         </Button>
 
         <div className="bg-muted rounded-2xl p-4">
