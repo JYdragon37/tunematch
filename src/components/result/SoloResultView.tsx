@@ -155,7 +155,7 @@ export function SoloResultView({ result }: Props) {
       {/* ⑦-a 구독 기록관 */}
       {result.channelStatsData && (
         <div className="animate-fade-in-delay-3">
-          <ChannelRecordCard data={result.channelStatsData} />
+          <ChannelRecordCard data={result.channelStatsData} totalChannels={result.channelCount} />
         </div>
       )}
 

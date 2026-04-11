@@ -127,14 +127,15 @@ export async function fetchSubscribedChannels(
           id: channelId,
           title,
           thumbnail: snippet.thumbnails?.default?.url || "",
-          categoryId: customCategory,  // keyword 분류 결과 저장
+          categoryId: customCategory,
           customCategory,
           description,
-        });
+          subscribedAt: snippet.publishedAt || undefined,  // 구독 날짜 저장
+        } as any);
       }
 
       pageToken = data.nextPageToken;
-    } while (pageToken && channels.length < 500);
+    } while (pageToken && channels.length < 300);  // 최대 300개 캡
 
     console.log(`[YouTube] 구독 채널 ${channels.length}개 수집 완료`);
   } catch (err) {
@@ -163,49 +164,67 @@ function formatSubscriberCount(count: number): string {
 
 export async function fetchChannelStats(
   accessToken: string,
-  subscriptions: Channel[]  // 이미 가져온 구독 목록 (날짜 포함)
+  subscriptions: Channel[]  // subscribedAt 포함한 구독 목록
 ): Promise<ChannelStat[]> {
+  // 구독 날짜 맵 (id → subscribedAt)
+  const subDateMap = new Map<string, string>();
+  subscriptions.forEach(ch => {
+    if ((ch as any).subscribedAt) subDateMap.set(ch.id, (ch as any).subscribedAt);
+  });
+
   if (!accessToken || accessToken.startsWith("mock-")) {
-    // Mock 데이터 반환
-    return subscriptions.slice(0, 10).map((ch, i) => ({
+    // Mock: subscriptions에서 날짜 포함해서 반환
+    return subscriptions.slice(0, Math.min(subscriptions.length, 20)).map((ch, i) => ({
       id: ch.id,
       title: ch.title,
       subscriberCount: Math.floor(Math.random() * 5_000_000) + 1_000,
       country: i % 3 === 0 ? "US" : "KR",
-      subscribedAt: new Date(Date.now() - Math.random() * 5 * 365 * 24 * 3600 * 1000).toISOString(),
+      subscribedAt: subDateMap.get(ch.id) ||
+        new Date(Date.now() - (i + 1) * 30 * 24 * 3600 * 1000).toISOString(),
     }));
   }
 
-  // 상위 50개 channelId
-  const top50 = subscriptions.slice(0, 50).map(c => c.id).filter(Boolean);
-  if (top50.length === 0) return [];
+  // 최대 300개 전수조사, 50개씩 배치
+  const allIds = subscriptions.slice(0, 300).map(c => c.id).filter(Boolean);
+  if (allIds.length === 0) return [];
+
+  const results: ChannelStat[] = [];
+  const BATCH = 50;
 
   try {
-    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
-    url.searchParams.set("part", "statistics,snippet");
-    url.searchParams.set("id", top50.join(","));
-    url.searchParams.set("maxResults", "50");
+    for (let i = 0; i < allIds.length; i += BATCH) {
+      const batch = allIds.slice(i, i + BATCH);
+      const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+      url.searchParams.set("part", "statistics,snippet");
+      url.searchParams.set("id", batch.join(","));
+      url.searchParams.set("maxResults", String(BATCH));
 
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+      const res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
-    if (!res.ok) {
-      console.error("[ChannelStats API Error]", await res.text());
-      return [];
+      if (!res.ok) {
+        console.error("[ChannelStats API Error]", res.status, await res.text());
+        break;
+      }
+
+      const data = await res.json();
+      for (const item of (data.items || [])) {
+        results.push({
+          id: item.id,
+          title: item.snippet?.title || "",
+          subscriberCount: parseInt(item.statistics?.subscriberCount || "0", 10),
+          country: item.snippet?.country,
+          subscribedAt: subDateMap.get(item.id),  // 구독 날짜 매핑
+        });
+      }
     }
-
-    const data = await res.json();
-    return (data.items || []).map((item: any) => ({
-      id: item.id,
-      title: item.snippet?.title || "",
-      subscriberCount: parseInt(item.statistics?.subscriberCount || "0", 10),
-      country: item.snippet?.country,
-    }));
+    console.log(`[ChannelStats] ${results.length}개 채널 통계 수집 완료`);
   } catch (err) {
     console.error("[fetchChannelStats error]", err);
-    return [];
   }
+
+  return results;
 }
 
 // ─── Liked Videos (videos.list) ───

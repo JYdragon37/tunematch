@@ -298,9 +298,16 @@ export function analyzeChannelStats(
 ): ChannelStatsData | null {
   if (stats.length === 0) return null;
 
-  const withSubs = subscriptions.slice(0, stats.length).map((sub, i) => ({
-    ...stats[i],
-    subscribedAt: (sub as any).subscribedAt || undefined,
+  // stats에 이미 subscribedAt이 포함되어 있음 (fetchChannelStats에서 subDateMap 매핑)
+  // subscriptions의 subscribedAt을 stats와 id로 매핑 (보강)
+  const subDateMap = new Map<string, string>();
+  subscriptions.forEach(s => {
+    if ((s as any).subscribedAt) subDateMap.set(s.id, (s as any).subscribedAt);
+  });
+
+  const withSubs = stats.map(s => ({
+    ...s,
+    subscribedAt: s.subscribedAt || subDateMap.get(s.id) || undefined,
   }));
 
   const sorted = [...withSubs].sort((a, b) => b.subscriberCount - a.subscriberCount);
@@ -313,8 +320,12 @@ export function analyzeChannelStats(
   const oldest = withDates[0];
   const newest = withDates[withDates.length - 1];
 
-  // 소채널 (10만 이하)
-  const hiddenFans = withSubs.filter(s => s.subscriberCount < 100_000);
+  // 소채널 (10만 이하) / 메가채널 (100만 이상)
+  const hiddenFans = withSubs.filter(s => s.subscriberCount < 100_000 && s.subscriberCount > 0);
+  const megaChannels = withSubs.filter(s => s.subscriberCount >= 1_000_000);
+  const avgSubscriberCount = withSubs.length > 0
+    ? Math.round(withSubs.reduce((sum, s) => sum + s.subscriberCount, 0) / withSubs.length)
+    : 0;
 
   // 국가 분포
   const countryCounts: Record<string, number> = {};
@@ -360,11 +371,14 @@ export function analyzeChannelStats(
     topSubscriber: toItem(topSub),
     smallestSubscriber: toItem(smallestSub),
     oldestSub: oldest ? toItem(oldest) : toItem(sorted[0]),
-    newestSub: newest ? toItem(newest) : toItem(sorted[0]),
+    newestSub: newest ? toItem(newest) : toItem(sorted[sorted.length - 1]),
     hiddenFanCount: hiddenFans.length,
     hiddenFanPercent: Math.round((hiddenFans.length / withSubs.length) * 100),
+    megaChannelCount: megaChannels.length,
+    megaChannelPercent: Math.round((megaChannels.length / withSubs.length) * 100),
+    avgSubscriberCount,
     countryDist,
-  };
+  } as any;
 }
 
 export function analyzeLikedVideos(
