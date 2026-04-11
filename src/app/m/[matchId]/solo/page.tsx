@@ -71,8 +71,9 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       }
 
       sessionStorage.removeItem(`solo_${params.matchId}`);
-      // comparing=true 플래그로 결과 페이지에서 A 솔로 대신 로딩 화면 표시
-      router.push(`/result/${params.matchId}?comparing=true`);
+      // comparing 플래그 → sessionStorage (URL 파라미터 방식은 Suspense 리마운트 루프 유발)
+      sessionStorage.setItem(`comparing_${params.matchId}`, "true");
+      router.push(`/result/${params.matchId}`);
     } catch (e: any) {
       setCompareError(e.message || "비교 중 오류가 발생했습니다. 다시 시도해주세요.");
       setComparing(false);

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { getMatchUrl } from "@/lib/utils";
 import type { MatchResult } from "@/types";
 import ShareCardModal from "./ShareCardModal";
@@ -18,11 +18,16 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
   const [showSave, setShowSave] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isComparingMode, setIsComparingMode] = useState(false);
   const prevResultRef = useRef<MatchResult | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isComparingMode = searchParams.get("comparing") === "true";
   const pollRef = useRef<NodeJS.Timeout>();
+
+  // sessionStorage에서 comparing 플래그 읽기
+  useEffect(() => {
+    const flag = sessionStorage.getItem(`comparing_${params.matchId}`);
+    if (flag === "true") setIsComparingMode(true);
+  }, [params.matchId]);
 
   useEffect(() => {
     fetchResult();
@@ -36,9 +41,10 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
       setSessionStatus(data.sessionStatus || data.status);
 
       if (data.status === "done" && data.result) {
-        // comparing 모드(B가 방금 compare 후 이동): URL 파라미터 제거 + 축하 표시
+        // comparing 모드(B가 방금 compare 후 이동): sessionStorage 정리 + 축하 표시
         if (isComparingMode) {
-          router.replace(`/result/${params.matchId}`);
+          sessionStorage.removeItem(`comparing_${params.matchId}`);
+          setIsComparingMode(false);
           setShowCelebration(true);
           setTimeout(() => setShowCelebration(false), 2500);
         }
@@ -228,13 +234,5 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
 }
 
 export default function ResultPage({ params }: { params: { matchId: string } }) {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin w-10 h-10 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    }>
-      <ResultPageContent params={params} />
-    </Suspense>
-  );
+  return <ResultPageContent params={params} />;
 }
