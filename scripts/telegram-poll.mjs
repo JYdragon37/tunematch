@@ -86,15 +86,18 @@ async function handleCommand(text, chatId) {
     case "/help":
       await sendMessage(chatId,
         `🤖 <b>TuneMatch Bot 활성화!</b>\n\n` +
-        `📋 <b>사용 가능한 명령어:</b>\n` +
+        `📋 <b>사용 가능한 명령어:</b>\n\n` +
+        `🤖 <b>AI 명령</b>\n` +
+        `/claude [명령] — Claude Code에 직접 명령\n\n` +
+        `🔧 <b>개발 도구</b>\n` +
         `/status — 서버 상태\n` +
         `/build — 빌드 실행\n` +
-        `/analyze — 최신 분석 결과\n` +
         `/git — git 상태\n` +
-        `/push — git push\n` +
-        `/restart — 서버 재시작\n` +
+        `/push — git push\n\n` +
+        `📊 <b>데이터</b>\n` +
+        `/analyze — 최신 분석 결과\n` +
         `/help — 이 도움말\n\n` +
-        `💬 그 외 메시지는 로그에 기록됩니다.`
+        `💡 예시: /claude 다크모드 추가해줘`
       );
       break;
 
@@ -185,12 +188,63 @@ async function handleCommand(text, chatId) {
       await sendMessage(chatId, "🔄 서버 재시작은 터미널에서 직접 해주세요:\n<code>npm run dev</code>");
       break;
 
+    case "/claude": {
+      if (!args) {
+        await sendMessage(chatId, "사용법: <code>/claude [명령어]</code>\n\n예시:\n/claude 다크모드 추가해줘\n/claude 버그 수정해줘\n/claude 현재 코드 리뷰해줘");
+        break;
+      }
+      await runClaudeCommand(args, chatId);
+      break;
+    }
+
     default:
-      // 일반 메시지 — 로그만 기록
+      // 일반 텍스트 → Claude Code로 전달
       console.log(`[메시지] "${text}"`);
       await sendMessage(chatId,
-        `💬 메시지 수신: "${text}"\n\n명령어를 사용하려면 /help`
+        `💬 메시지를 받았어요.\n\n` +
+        `Claude Code에 명령하려면:\n<code>/claude ${text}</code>\n\n` +
+        `또는 /help 로 다른 명령어 확인`
       );
+  }
+}
+
+// ─── Claude Code 실행 ───
+
+async function runClaudeCommand(prompt, chatId) {
+  console.log(`[Claude] 실행: "${prompt}"`);
+  await sendMessage(chatId,
+    `🤖 <b>Claude Code 실행 중...</b>\n\n` +
+    `📝 명령: "${prompt}"\n\n` +
+    `⏳ 처리 중입니다. 완료되면 알려드릴게요.`
+  );
+
+  try {
+    const projectDir = join(__dirname, "..");
+    const safePrompt = prompt.replace(/"/g, '\\"');
+
+    const { stdout, stderr } = await execAsync(
+      `claude -p "${safePrompt}" --output-format text 2>&1`,
+      {
+        cwd: projectDir,
+        timeout: 180000, // 3분
+        env: { ...process.env, HOME: process.env.HOME },
+      }
+    );
+
+    const output = (stdout + stderr).trim();
+    const preview = output.slice(0, 1500);
+    const truncated = output.length > 1500;
+
+    await sendMessage(chatId,
+      `✅ <b>Claude Code 완료!</b>\n\n` +
+      `<code>${preview}${truncated ? "\n...(생략됨)" : ""}</code>`
+    );
+  } catch (err) {
+    const errMsg = err.message?.slice(0, 500) || "알 수 없는 오류";
+    console.error("[Claude error]", errMsg);
+    await sendMessage(chatId,
+      `❌ <b>실행 실패</b>\n\n<code>${errMsg}</code>`
+    );
   }
 }
 
