@@ -1,3 +1,4 @@
+"use client";
 import type { TasteType } from "@/types";
 import { TASTE_TYPE_META } from "@/types";
 import { Button } from "@/components/ui/Button";
