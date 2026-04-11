@@ -198,7 +198,8 @@ export function analyzeCompatibility(
   const categoryScore = calcCategoryScore(vecA, vecB);
   const { curiosityScore, humorScore, patternScore } = calcSubscores(vecA, vecB);
 
-  const totalScore = channelScore + categoryScore;
+  // 채널 겹침(40%) + 카테고리 유사도(60%) → 0-100점
+  const totalScore = Math.round((channelScore / 30 * 40) + (categoryScore / 50 * 60));
   const { comment, type: commentType } = generateComment(totalScore, vecA, vecB);
 
   const recommendations = calcRecommendations(channelsA, channelsB, recommendationPool);
@@ -207,14 +208,15 @@ export function analyzeCompatibility(
   const tasteTypeA = classifyTasteType(vecA);
   const tasteTypeB = classifyTasteType(vecB);
   const { type: compatibilityType, desc: compatibilityTypeDesc } = getCompatibilityType(tasteTypeA, tasteTypeB);
+  const crossRecs = calcCrossRecommendations(channelsA, channelsB, vecA, vecB);
   const comparisonData: import("@/types").ComparisonData = {
     categoryOverlap: calcCategoryOverlap(vecA, vecB),
-    crossRecsFromA: calcCrossRecommendations(channelsA, channelsB, vecA, vecB).fromA,
-    crossRecsFromB: calcCrossRecommendations(channelsA, channelsB, vecA, vecB).fromB,
+    crossRecsFromA: crossRecs.fromA,
+    crossRecsFromB: crossRecs.fromB,
     chemistryScores: calcChemistryScores(vecA, vecB),
     compatibilityType,
     compatibilityTypeDesc,
-    compatibilityStory: generateCompatibilityStory(vecA, vecB, userAName, userBName, Math.min(100, totalScore)),
+    compatibilityStory: generateCompatibilityStory(vecA, vecB, userAName, userBName, totalScore),
     tasteComparison: getTasteComparison(vecA, vecB),
     userATasteType: tasteTypeA,
     userBTasteType: tasteTypeB,
@@ -225,7 +227,7 @@ export function analyzeCompatibility(
     matchSessionId,
     userAName,
     userBName,
-    totalScore: Math.min(100, totalScore),
+    totalScore: Math.min(100, Math.max(0, totalScore)),
     channelScore,
     categoryScore,
     curiosityScore,

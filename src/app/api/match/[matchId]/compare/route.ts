@@ -15,6 +15,7 @@ export async function POST(
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
     const status = session.status as string;
     if (status === "done") return NextResponse.json({ error: "이미 완료" }, { status: 409 });
+    if (status === "expired") return NextResponse.json({ error: "만료된 세션" }, { status: 410 });
 
     // channels_a, channels_b 조회 (status 체크보다 데이터 존재 여부가 신뢰성 있음)
     const { data: row, error: rowErr } = await supabaseAdmin

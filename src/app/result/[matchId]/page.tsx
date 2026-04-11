@@ -36,12 +36,14 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
       setSessionStatus(data.sessionStatus || data.status);
 
       if (data.status === "done" && data.result) {
-        // comparing 모드에서 완료되면 URL 파라미터 제거
+        // comparing 모드(B가 방금 compare 후 이동): URL 파라미터 제거 + 축하 표시
         if (isComparingMode) {
           router.replace(`/result/${params.matchId}`);
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2500);
         }
-        // 이전 결과가 솔로(tasteType 있음)이고 새 결과가 비교(tasteType 없음)이면 축하 오버레이
-        if (prevResultRef.current?.tasteType && !data.result.tasteType) {
+        // A가 폴링 중 비교 완료 감지: 솔로→비교 전환 시 축하
+        else if (prevResultRef.current?.tasteType && !data.result.tasteType) {
           setShowCelebration(true);
           setTimeout(() => setShowCelebration(false), 2500);
         }
@@ -53,12 +55,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
           setTimeout(() => setAdShown(true), 500);
         }, 3000);
       } else if (data.status === "solo_done" && data.result) {
-        // A 솔로 완료, 친구 대기 중
-        // 이전 결과가 솔로(tasteType 있음)이고 새 결과가 비교(tasteType 없음)이면 축하 오버레이
-        if (prevResultRef.current?.tasteType && !data.result.tasteType) {
-          setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 2500);
-        }
+        // A 솔로 완료, 친구 대기 중 (폴링 유지)
         prevResultRef.current = data.result;
         setResult(data.result);
         setLoading(false);
