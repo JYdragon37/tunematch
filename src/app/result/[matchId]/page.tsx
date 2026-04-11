@@ -19,14 +19,21 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isComparingMode, setIsComparingMode] = useState(false);
+  const [comparingTimedOut, setComparingTimedOut] = useState(false);
   const prevResultRef = useRef<MatchResult | null>(null);
+  const isComparingRef = useRef(false);
   const router = useRouter();
   const pollRef = useRef<NodeJS.Timeout>();
 
   // sessionStorage에서 comparing 플래그 읽기
   useEffect(() => {
     const flag = sessionStorage.getItem(`comparing_${params.matchId}`);
-    if (flag === "true") setIsComparingMode(true);
+    if (flag === "true") {
+      setIsComparingMode(true);
+      isComparingRef.current = true;
+      // 15초 타임아웃: 너무 오래 걸리면 탈출 버튼 표시
+      setTimeout(() => setComparingTimedOut(true), 15000);
+    }
   }, [params.matchId]);
 
   useEffect(() => {
@@ -45,6 +52,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
         if (isComparingMode) {
           sessionStorage.removeItem(`comparing_${params.matchId}`);
           setIsComparingMode(false);
+          isComparingRef.current = false;
           setShowCelebration(true);
           setTimeout(() => setShowCelebration(false), 2500);
         }
@@ -75,6 +83,10 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
       }
     } catch {
       setLoading(false);
+      // 에러 시에도 comparing 모드면 재시도
+      if (isComparingRef.current) {
+        pollRef.current = setTimeout(fetchResult, 3000);
+      }
     }
   };
 
@@ -93,7 +105,20 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
           <div className="text-5xl mb-5">🎯</div>
           <h1 className="text-2xl font-black text-text-primary mb-2">궁합 분석 중...</h1>
           <p className="text-text-secondary text-sm mb-6">두 사람의 유튜브 취향을 비교하고 있어요</p>
-          <div className="animate-spin w-10 h-10 border-3 border-primary border-t-transparent rounded-full mx-auto" />
+          <div className="animate-spin w-10 h-10 border-3 border-primary border-t-transparent rounded-full mx-auto mb-6" />
+          {comparingTimedOut && (
+            <button
+              onClick={() => {
+                sessionStorage.removeItem(`comparing_${params.matchId}`);
+                setIsComparingMode(false);
+                isComparingRef.current = false;
+                setComparingTimedOut(false);
+              }}
+              className="text-sm text-primary underline"
+            >
+              시간이 오래 걸리네요. 결과 확인하기 →
+            </button>
+          )}
         </div>
       </div>
     );

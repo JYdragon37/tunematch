@@ -29,8 +29,9 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
         setResult(r);
         setUserAName(aName || "");
         setLoading(false);
-        // 기본 결과 보여주면서 백그라운드에서 전체 분석 시작
-        triggerFullAnalysis(aName || "");
+        // B의 이름은 result.userAName (aName은 A의 이름)
+        const hasFullData = !!(r?.channelStatsData);
+        if (!hasFullData) triggerFullAnalysis(r?.userAName || "");
         return;
       }
     } catch {}
@@ -45,11 +46,11 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       const data = await res.json();
       const hasFullData = !!(data.result?.channelStatsData);
       setResult(data.result);
-      setUserAName(data.userAName || "");
+      setUserAName(data.userAName || "");  // A의 이름 (버튼용)
       setLoading(false);
-      // 전체 분석 데이터 없으면 백그라운드 실행
       if (!hasFullData) {
-        triggerFullAnalysis(data.userAName || "");
+        // B의 이름은 data.result.userAName
+        triggerFullAnalysis(data.result?.userAName || "");
       }
     } catch {
       setLoadError("결과를 불러올 수 없어요. 다시 시도해주세요.");
