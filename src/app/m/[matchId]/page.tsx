@@ -63,8 +63,16 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
   const handleJoin = async () => {
     if (!session) return;
     setConnecting(true);
+
+    const accessToken = (session as any)?.accessToken || "";
+
+    // accessToken 없으면 바로 재로그인 (토큰 없는 기존 세션)
+    if (!accessToken) {
+      await signIn("google", { callbackUrl: `/m/${params.matchId}` });
+      return;
+    }
+
     try {
-      const accessToken = (session as any)?.accessToken || "";
       const res = await fetch(`/api/match/${params.matchId}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,12 +85,20 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
 
       if (!res.ok) {
         const err = await res.json();
-        const detail = err.detail ? ` (${err.detail})` : "";
-        throw new Error(`${err.error || "연동 실패"}${detail}`);
+        const detail: string = err.detail || "";
+        // YouTube 토큰 만료/권한 문제 → 자동 재로그인
+        if (
+          detail.includes("YOUTUBE_TOKEN_EXPIRED") ||
+          detail.includes("YOUTUBE_SCOPE_MISSING") ||
+          detail.includes("YOUTUBE_TOKEN")
+        ) {
+          await signIn("google", { callbackUrl: `/m/${params.matchId}` });
+          return;
+        }
+        throw new Error(`${err.error || "연동 실패"} (${detail || res.status})`);
       }
 
       const data = await res.json();
-      // B 솔로 결과를 sessionStorage에 저장 후 solo 페이지로 이동
       if (data.soloResult) {
         sessionStorage.setItem(`solo_${params.matchId}`, JSON.stringify({
           result: data.soloResult,
