@@ -37,7 +37,7 @@ export interface CategoryVector {
   tech: number;
 }
 
-export type MatchStatus = "waiting" | "analyzing" | "done" | "expired";
+export type MatchStatus = "waiting" | "b_joined" | "analyzing" | "done" | "expired";
 
 export interface MatchSession {
   id: string;
