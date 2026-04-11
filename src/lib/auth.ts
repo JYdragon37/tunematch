@@ -12,6 +12,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorization: {
         params: {
           scope: "openid email profile https://www.googleapis.com/auth/youtube.readonly",
+          prompt: "select_account consent",  // 계정 선택 + YouTube scope 매번 재동의
+          access_type: "offline",            // refresh_token 발급
         },
       },
     }),
