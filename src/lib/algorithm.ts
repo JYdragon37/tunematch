@@ -367,6 +367,79 @@ export function analyzeChannelStats(
     return `${n}`;
   }
 
+  // ─── 추가 분석 ───
+
+  // ① TOP 5 구독자 많은 채널
+  const top5Subscribers = sorted.slice(0, 5).map(toItem);
+
+  // ② 소채널 TOP 5 (구독자 적은 순)
+  const top5Hidden = [...withSubs]
+    .filter(s => s.subscriberCount > 0)
+    .sort((a, b) => a.subscriberCount - b.subscriberCount)
+    .slice(0, 5)
+    .map(toItem);
+
+  // ③ 메가채널 TOP 5
+  const top5Mega = megaChannels
+    .sort((a, b) => b.subscriberCount - a.subscriberCount)
+    .slice(0, 5)
+    .map(toItem);
+
+  // ④ 연도별 구독 히스토리
+  const yearCount: Record<number, number> = {};
+  withSubs.forEach(s => {
+    if (s.subscribedAt) {
+      const year = new Date(s.subscribedAt).getFullYear();
+      yearCount[year] = (yearCount[year] || 0) + 1;
+    }
+  });
+  const yearDist = Object.entries(yearCount)
+    .sort((a, b) => Number(a[0]) - Number(b[0]))
+    .map(([year, count]) => ({ year: Number(year), count }));
+
+  // ⑤ 구독 속도 (일 단위)
+  let subSpeedDays = 0;
+  if (withDates.length >= 2) {
+    const spanMs = new Date(withDates[withDates.length - 1].subscribedAt!).getTime()
+      - new Date(withDates[0].subscribedAt!).getTime();
+    const spanDays = spanMs / (1000 * 60 * 60 * 24);
+    subSpeedDays = Math.round(spanDays / (withDates.length - 1));
+  }
+
+  // ⑥ 구독자 규모 분포
+  const bands = {
+    nano:  withSubs.filter(s => s.subscriberCount < 10_000).length,       // ~1만
+    small: withSubs.filter(s => s.subscriberCount >= 10_000 && s.subscriberCount < 100_000).length,  // 1~10만
+    mid:   withSubs.filter(s => s.subscriberCount >= 100_000 && s.subscriberCount < 1_000_000).length, // 10~100만
+    mega:  withSubs.filter(s => s.subscriberCount >= 1_000_000).length,   // 100만+
+  };
+
+  // ⑦ 국가별 대표 채널 TOP 3
+  const countryTopChannels: Record<string, typeof withSubs[0][]> = {};
+  withSubs.forEach(s => {
+    const code = s.country || "KR";
+    if (!countryTopChannels[code]) countryTopChannels[code] = [];
+    countryTopChannels[code].push(s);
+  });
+  const countryRepresentatives = Object.entries(countryTopChannels)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3)
+    .map(([code, chs]) => ({
+      code,
+      label: { KR:"🇰🇷 한국", US:"🇺🇸 미국", JP:"🇯🇵 일본", GB:"🇬🇧 영국" }[code] || code,
+      count: chs.length,
+      topChannel: toItem(chs.sort((a, b) => b.subscriberCount - a.subscriberCount)[0]),
+    }));
+
+  // ⑨ 최근 1년 활동
+  const oneYearAgo = Date.now() - 365 * 24 * 3600 * 1000;
+  const recentSubCount = withSubs.filter(s =>
+    s.subscribedAt && new Date(s.subscribedAt).getTime() > oneYearAgo
+  ).length;
+
+  // ⑩ 오랜 인연 (구독 날짜 오래된 순 TOP 5)
+  const top5Oldest = withDates.slice(0, 5).map(toItem);
+
   return {
     topSubscriber: toItem(topSub),
     smallestSubscriber: toItem(smallestSub),
@@ -378,6 +451,16 @@ export function analyzeChannelStats(
     megaChannelPercent: Math.round((megaChannels.length / withSubs.length) * 100),
     avgSubscriberCount,
     countryDist,
+    // 신규 필드
+    top5Subscribers,
+    top5Hidden,
+    top5Mega,
+    yearDist,
+    subSpeedDays,
+    subscriberBands: bands,
+    countryRepresentatives,
+    recentSubCount,
+    top5Oldest,
   } as any;
 }
 
