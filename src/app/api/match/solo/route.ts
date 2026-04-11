@@ -28,12 +28,14 @@ export async function POST(req: NextRequest) {
     const session = await getSession(matchId);
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
 
-    // Supabase에서 저장된 채널 + accessToken 가져오기
-    const { data: sessionRow } = await supabaseAdmin
+    // Supabase에서 저장된 채널 가져오기
+    const { data: sessionRow, error: sessionErr } = await supabaseAdmin
       .from("match_sessions")
-      .select("channels_a, access_token")
+      .select("channels_a")
       .eq("id", matchId)
       .single();
+
+    if (sessionErr) console.error("[solo] session 조회 에러:", sessionErr.message);
 
     let channelsA: Channel[] = [];
     let usedMock = false;
@@ -41,13 +43,14 @@ export async function POST(req: NextRequest) {
       try { channelsA = JSON.parse(sessionRow.channels_a); } catch {}
     }
     if (channelsA.length === 0) {
+      console.log("[solo] channels_a 없음 → mock 폴백");
       const { mockChannelsA } = await import("@/data/mock-channels");
       channelsA = mockChannelsA;
       usedMock = true;
     }
 
-    // accessToken: 요청에서 받거나 세션에서
-    const accessToken = reqToken || sessionRow?.access_token || "";
+    // accessToken: 요청에서만 받음 (채널 통계/좋아요 API용)
+    const accessToken = reqToken || "";
 
     // 채널 통계 + 좋아요 영상 병렬 수집
     const [channelStatsRaw, likedVideos] = await Promise.all([
