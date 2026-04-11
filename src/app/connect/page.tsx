@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
-import { useEffect } from "react";
 
 const COLLECT_INFO = [
   { icon: "✅", text: "구독 채널 목록" },
@@ -16,63 +15,45 @@ const COLLECT_INFO = [
 export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
 
-  // 이미 세션이 있으면 매칭 생성으로 바로 진행
-  useEffect(() => {
-    if (status === "authenticated" && session) {
-      createMatch();
-    }
-  }, [status]);
-
-  const createMatch = async () => {
-    setLoading(true);
-    try {
-      const accessToken = (session as any)?.accessToken;
-      const res = await fetch("/api/match/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: (session as any)?.googleId || session?.user?.email,
-          userName: session?.user?.name || "사용자",
-          email: session?.user?.email || "",
-          accessToken: accessToken || "",
-        }),
-      });
-
-      if (!res.ok) throw new Error("세션 생성 실패");
-      const { matchId } = await res.json();
-      router.push(`/share?matchId=${matchId}`);
-    } catch (err) {
-      setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
-      setLoading(false);
-    }
-  };
+  // 자동 리다이렉트 없음 — 항상 버튼 클릭으로만 시작
 
   const handleGoogleConnect = async () => {
     setLoading(true);
     setError(null);
     try {
-      await signIn("google", { callbackUrl: "/connect" });
+      const accessToken = (session as any)?.accessToken;
+
+      if (session && accessToken) {
+        // 유효한 YouTube 토큰이 있으면 바로 매칭 생성
+        await createMatch(session, accessToken);
+      } else {
+        // 토큰 없거나 미로그인 → OAuth 재인증
+        await signIn("google", { callbackUrl: "/connect/callback" });
+      }
     } catch {
-      setError("Google 로그인에 실패했습니다.");
+      setError("연동 중 오류가 발생했습니다. 다시 시도해주세요.");
       setLoading(false);
     }
   };
 
-  if (status === "loading" || (status === "authenticated" && loading)) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-text-secondary text-sm">
-            {status === "authenticated" ? "구독 채널 분석 중..." : "로딩 중..."}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const createMatch = async (sess: any, accessToken: string) => {
+    const res = await fetch("/api/match/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: (sess as any)?.googleId || sess?.user?.email,
+        userName: sess?.user?.name || "사용자",
+        email: sess?.user?.email || "",
+        accessToken,
+      }),
+    });
+    if (!res.ok) throw new Error("세션 생성 실패");
+    const { matchId } = await res.json();
+    router.push(`/share?matchId=${matchId}`);
+  };
 
   return (
     <main className="min-h-screen bg-background">
