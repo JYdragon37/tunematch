@@ -19,14 +19,17 @@ export function copyToClipboard(text: string): Promise<void> {
   return Promise.resolve();
 }
 
+function getBaseUrl(): string {
+  if (typeof window !== "undefined") return window.location.origin;
+  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+}
+
 export function getMatchUrl(matchId: string): string {
-  const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return `${base}/m/${matchId}`;
+  return `${getBaseUrl()}/m/${matchId}`;
 }
 
 export function getResultUrl(matchId: string): string {
-  const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return `${base}/result/${matchId}`;
+  return `${getBaseUrl()}/result/${matchId}`;
 }
 
 export function formatDate(dateStr: string): string {

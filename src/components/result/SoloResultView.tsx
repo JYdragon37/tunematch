@@ -1,6 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getMatchUrl } from "@/lib/utils";
+import { shareKakao } from "@/lib/kakao";
 import { TasteTypeBadge } from "./TasteTypeBadge";
 import { DiversityGauge } from "./DiversityGauge";
 import { FriendTypeCard } from "./FriendTypeCard";
@@ -230,6 +232,87 @@ export function SoloResultView({ result }: Props) {
         </div>
       )}
 
+      {/* ⑨ 친구 초대 */}
+      <InviteSection matchId={result.matchSessionId} userName={result.userAName} />
+
+    </div>
+  );
+}
+
+function InviteSection({ matchId, userName }: { matchId: string; userName: string }) {
+  const [copied, setCopied] = useState(false);
+  const matchUrl = getMatchUrl(matchId);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(matchUrl).catch(() => {
+      const el = document.createElement("textarea");
+      el.value = matchUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    });
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleKakao = () => {
+    shareKakao({
+      title: `${userName}님의 유튜브 취향 궁합 분석해줘!`,
+      description: "30초만에 우리의 유튜브 취향이 얼마나 닮았는지 확인해봐요",
+      linkUrl: matchUrl,
+    });
+  };
+
+  const handleNativeShare = () => {
+    const text = `[TuneMatch] ${userName}님의 유튜브 취향 궁합 분석해줘! 링크: ${matchUrl}`;
+    if (navigator.share) {
+      navigator.share({ title: "TuneMatch", text, url: matchUrl });
+    } else {
+      window.open(`sms:?body=${encodeURIComponent(text)}`);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-6 border border-primary/20 animate-fade-in-delay-3">
+      <div className="text-center mb-5">
+        <p className="text-2xl mb-2">🎯</p>
+        <h3 className="font-black text-gray-900 text-lg">친구와 취향 궁합 비교해볼까요?</h3>
+        <p className="text-sm text-gray-500 mt-1">링크를 보내면 친구도 연동해서 바로 결과를 볼 수 있어요</p>
+      </div>
+
+      {/* 링크 미리보기 */}
+      <div className="bg-white rounded-2xl p-3 flex items-center gap-2 mb-4 border border-border">
+        <span className="text-lg shrink-0">🔗</span>
+        <p className="text-xs text-gray-600 flex-1 truncate font-medium">{matchUrl}</p>
+        <button
+          onClick={handleCopy}
+          className="shrink-0 text-xs font-bold text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/5 transition-colors"
+        >
+          {copied ? "✓ 복사됨" : "복사"}
+        </button>
+      </div>
+
+      {/* 공유 버튼들 */}
+      <div className="space-y-2">
+        <button
+          onClick={handleKakao}
+          className="w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2"
+          style={{ backgroundColor: "#FEE500", color: "#1A1A1A" }}
+        >
+          💬 카카오톡으로 초대
+        </button>
+        <button
+          onClick={handleNativeShare}
+          className="w-full py-3 rounded-2xl bg-gray-100 text-gray-700 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+        >
+          📱 문자·다른 앱으로 공유
+        </button>
+      </div>
+
+      <p className="text-xs text-gray-400 text-center mt-4">
+        친구가 연동하면 두 사람의 궁합 점수를 볼 수 있어요
+      </p>
     </div>
   );
 }
