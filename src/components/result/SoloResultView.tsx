@@ -13,11 +13,38 @@ interface Props {
 
 const TOP_CATEGORY_COLORS = ["#FF4D00", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"];
 
+// mock 채널 ID 목록 (15개 mock 데이터 샘플)
+const MOCK_CHANNEL_IDS = new Set(["UCupvZG-5ko_eiXAupbDfxWw", "UC-9-kyTW8ZkZNDHQJ6FgpwQ", "UCbmNph6atAoGfqLoCL_duAg"]);
+function isMockResult(result: MatchResult): boolean {
+  return result.commonChannels.some((c) => MOCK_CHANNEL_IDS.has(c.id));
+}
+
 export function SoloResultView({ result }: Props) {
   const router = useRouter();
+  const usingMock = isMockResult(result);
 
   return (
     <div className="space-y-5">
+      {/* mock 경고 배너 */}
+      {usingMock && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+          <span className="text-xl">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">샘플 데이터로 분석됐어요</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              YouTube 연동이 완전하지 않아 샘플 채널로 분석됐습니다.
+              다시 로그인하면 내 실제 구독 채널로 분석해드려요.
+            </p>
+            <button
+              onClick={() => router.push("/connect")}
+              className="mt-2 text-xs font-semibold text-amber-800 underline"
+            >
+              다시 연동하기 →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="text-center animate-fade-in">
         <p className="text-lg font-semibold text-gray-900">

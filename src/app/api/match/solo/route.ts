@@ -19,9 +19,6 @@ export async function POST(req: NextRequest) {
     const session = await getSession(matchId);
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
 
-    const existing = await getResultBySession(matchId);
-    if (existing) return NextResponse.json({ resultId: existing.id });
-
     const { data: sessionRow } = await supabaseAdmin
       .from("match_sessions")
       .select("channels_a")
@@ -29,13 +26,20 @@ export async function POST(req: NextRequest) {
       .single();
 
     let channelsA: Channel[] = [];
+    let usedMock = false;
     if (sessionRow?.channels_a) {
       try { channelsA = JSON.parse(sessionRow.channels_a); } catch {}
     }
     if (channelsA.length === 0) {
       const { mockChannelsA } = await import("@/data/mock-channels");
       channelsA = mockChannelsA;
+      usedMock = true;
     }
+
+    // 실제 채널이 있으면 기존 결과 재사용 (캐시)
+    // mock 채널이면 항상 재분석 (YouTube 재연동 후 정확한 결과 제공)
+    const existing = await getResultBySession(matchId);
+    if (existing && !usedMock) return NextResponse.json({ resultId: existing.id });
 
     const vecA = buildCategoryVector(channelsA);
     const tasteType = classifyTasteType(vecA);
