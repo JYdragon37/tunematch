@@ -97,7 +97,9 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
         {/* 이름 */}
         <div className="text-center animate-fade-in">
           <p className="text-lg font-semibold text-text-primary">
-            {result.userAName} × {result.userBName}
+            {result.userBName === "나의 취향 분석"
+              ? `${result.userAName}의 취향 분석`
+              : `${result.userAName} × ${result.userBName}`}
           </p>
         </div>
 
@@ -106,7 +108,9 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
           <div className="text-8xl font-black text-primary mb-2 animate-count-up">
             <CountUpScore target={result.totalScore} duration={2000} />
           </div>
-          <p className="text-text-secondary font-medium mb-4">취향 싱크로율</p>
+          <p className="text-text-secondary font-medium mb-4">
+            {result.userBName === "나의 취향 분석" ? "취향 다양성 점수" : "취향 싱크로율"}
+          </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2">
             <span className="text-primary font-bold text-sm">{result.commentType}</span>
           </div>
