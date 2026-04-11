@@ -77,7 +77,8 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "연동 실패");
+        const detail = err.detail ? ` (${err.detail})` : "";
+        throw new Error(`${err.error || "연동 실패"}${detail}`);
       }
 
       const data = await res.json();
