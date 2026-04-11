@@ -66,7 +66,8 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
           router.push(`/result/${params.matchId}`);
           return;
         }
-        throw new Error(err.error || "비교 실패");
+        const detail = err.detail ? ` (${err.detail})` : "";
+        throw new Error(`${err.error || "비교 실패"}${detail}`);
       }
 
       sessionStorage.removeItem(`solo_${params.matchId}`);

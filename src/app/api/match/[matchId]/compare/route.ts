@@ -62,7 +62,8 @@ export async function POST(
 
     return NextResponse.json({ success: true, resultId: result.id });
   } catch (error) {
-    console.error("[match/compare error]", error);
-    return NextResponse.json({ error: "비교 실패" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[match/compare error]", msg);
+    return NextResponse.json({ error: "비교 실패", detail: msg }, { status: 500 });
   }
 }
