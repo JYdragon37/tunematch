@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
@@ -7,16 +7,23 @@ export default function ConnectCallbackPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
+  const mountTimeRef = useRef(Date.now());
 
   useEffect(() => {
     if (status === "loading") return;
 
     if (status === "unauthenticated") {
-      router.push("/connect");
+      // OAuth 직후 세션 수립 지연을 고려해 1.5초 대기 후 리다이렉트
+      const elapsed = Date.now() - mountTimeRef.current;
+      const delay = Math.max(0, 1500 - elapsed);
+      setTimeout(() => router.push("/connect"), delay);
       return;
     }
 
     if (status === "authenticated" && session) {
+      if (processedRef.current) return;
+      processedRef.current = true;
       const accessToken = (session as any)?.accessToken;
 
       if (!accessToken) {
