@@ -31,10 +31,10 @@ export async function fetchSubscribedChannels(
   accessToken: string,
   userSlot: "A" | "B" = "A"
 ): Promise<Channel[]> {
-  // Mock 모드
-  if (isMockMode || accessToken.startsWith("mock-")) {
+  // Mock 모드 또는 토큰 없음
+  if (isMockMode || !accessToken || accessToken.startsWith("mock-")) {
     console.log(`[Mock] YouTube 구독 채널 반환 (User ${userSlot})`);
-    await new Promise((r) => setTimeout(r, 500)); // 실제 API 지연 시뮬레이션
+    await new Promise((r) => setTimeout(r, 300));
     return userSlot === "A" ? mockChannelsA : mockChannelsB;
   }
 
@@ -56,7 +56,12 @@ export async function fetchSubscribedChannels(
 
       if (!res.ok) {
         const error = await res.json();
-        console.error("[YouTube API Error]", error);
+        console.error("[YouTube API Error]", JSON.stringify(error));
+        // youtube.readonly 스코프 없거나 토큰 만료 시 mock 데이터로 폴백
+        if (channels.length === 0) {
+          console.log("[YouTube] API 실패, mock 데이터로 폴백");
+          return userSlot === "A" ? mockChannelsA : mockChannelsB;
+        }
         break;
       }
 

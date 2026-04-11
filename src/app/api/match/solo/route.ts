@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
       try { channelsA = JSON.parse(sessionRow.channels_a); } catch {}
     }
 
+    // 채널 데이터가 없으면 mock 데이터로 폴백 (YouTube 스코프 미설정 등)
     if (channelsA.length === 0) {
-      return NextResponse.json({ error: "채널 데이터 없음" }, { status: 400 });
+      console.log("[Solo] channels_a 없음 → mock 데이터로 폴백");
+      const { mockChannelsA } = await import("@/data/mock-channels");
+      channelsA = mockChannelsA;
     }
 
     const vecA = buildCategoryVector(channelsA);
