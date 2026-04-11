@@ -86,6 +86,31 @@ export interface MatchResult {
   channelStatsData?: ChannelStatsData;
   likedVideoInsight?: LikedVideoInsight;
   curatedRecs?: CuratedChannel[];
+  comparisonData?: ComparisonData;
+}
+
+export interface ComparisonData {
+  categoryOverlap: Record<string, number>;       // 카테고리별 0-100 궁합 점수
+  crossRecsFromA: Channel[];                      // A가 B에게 추천 채널 TOP5
+  crossRecsFromB: Channel[];                      // B가 A에게 추천 채널 TOP5
+  chemistryScores: {
+    conversationScore: number;   // 대화 케미 (지식+시사 기반)
+    varietyScore: number;        // 다양성 평균
+    bingeDangerScore: number;    // 폭주 위험도 (엔터+유머 기반)
+  };
+  compatibilityType: string;         // e.g. "테크 인사이더 × 엔터 마니아"
+  compatibilityTypeDesc: string;     // e.g. "기술과 재미가 만났어요"
+  compatibilityStory: string;        // 두 사람 유튜브 여정 내러티브
+  tasteComparison: {
+    mostSimilar: string;             // CategoryKey
+    mostDifferent: string;           // CategoryKey
+    mostSimilarLabel: string;        // e.g. "음악"
+    mostDifferentLabel: string;      // e.g. "뉴스/시사"
+    mostSimilarScore: number;        // 0-100
+    mostDifferentScore: number;      // 0-100
+  };
+  userATasteType: string;            // TasteType
+  userBTasteType: string;            // TasteType
 }
 
 export interface SavedResult {

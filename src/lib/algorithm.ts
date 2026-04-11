@@ -203,6 +203,23 @@ export function analyzeCompatibility(
 
   const recommendations = calcRecommendations(channelsA, channelsB, recommendationPool);
 
+  // comparisonData 계산
+  const tasteTypeA = classifyTasteType(vecA);
+  const tasteTypeB = classifyTasteType(vecB);
+  const { type: compatibilityType, desc: compatibilityTypeDesc } = getCompatibilityType(tasteTypeA, tasteTypeB);
+  const comparisonData: import("@/types").ComparisonData = {
+    categoryOverlap: calcCategoryOverlap(vecA, vecB),
+    crossRecsFromA: calcCrossRecommendations(channelsA, channelsB, vecA, vecB).fromA,
+    crossRecsFromB: calcCrossRecommendations(channelsA, channelsB, vecA, vecB).fromB,
+    chemistryScores: calcChemistryScores(vecA, vecB),
+    compatibilityType,
+    compatibilityTypeDesc,
+    compatibilityStory: generateCompatibilityStory(vecA, vecB, userAName, userBName, Math.min(100, totalScore)),
+    tasteComparison: getTasteComparison(vecA, vecB),
+    userATasteType: tasteTypeA,
+    userBTasteType: tasteTypeB,
+  };
+
   return {
     id: uuidv4(),
     matchSessionId,
@@ -221,6 +238,7 @@ export function analyzeCompatibility(
     userAVector: vecA,
     userBVector: vecB,
     createdAt: new Date().toISOString(),
+    comparisonData,
   };
 }
 
@@ -657,4 +675,242 @@ export function generateSoloComment(tasteType: TasteType, diversityIndex: number
     comment: comments[tasteType],
     commentType: `${typeLabel[tasteType]} · ${diversityLabel}`,
   };
+}
+
+// ─── Compatibility Enrichment ───
+
+const CATEGORY_LABELS_KO: Record<string, string> = {
+  entertainment: "엔터/게임", knowledge: "지식/교육", humor: "유머/밈",
+  lifestyle: "라이프스타일", music: "음악", news: "뉴스/시사", food: "음식/요리", tech: "테크",
+};
+
+export function calcCategoryOverlap(vecA: CategoryVector, vecB: CategoryVector): Record<string, number> {
+  const keys = Object.keys(vecA) as (keyof CategoryVector)[];
+  const result: Record<string, number> = {};
+  keys.forEach(k => {
+    result[k] = Math.round((1 - Math.abs(vecA[k] - vecB[k])) * 100);
+  });
+  return result;
+}
+
+export function calcChemistryScores(vecA: CategoryVector, vecB: CategoryVector): {
+  conversationScore: number;
+  varietyScore: number;
+  bingeDangerScore: number;
+} {
+  const knowledgeAvg = (vecA.knowledge + vecB.knowledge) / 2;
+  const newsAvg = (vecA.news + vecB.news) / 2;
+  const conversationScore = Math.round((knowledgeAvg + newsAvg) * 100);
+
+  const varietyScore = Math.round((calcDiversityIndex(vecA) + calcDiversityIndex(vecB)) / 2);
+
+  const entAvg = (vecA.entertainment + vecB.entertainment) / 2;
+  const humorAvg = (vecA.humor + vecB.humor) / 2;
+  const bingeDangerScore = Math.round((entAvg + humorAvg) * 100);
+
+  return {
+    conversationScore: Math.min(100, conversationScore),
+    varietyScore: Math.min(100, varietyScore),
+    bingeDangerScore: Math.min(100, bingeDangerScore),
+  };
+}
+
+export function calcCrossRecommendations(
+  channelsA: Channel[],
+  channelsB: Channel[],
+  vecA: CategoryVector,
+  vecB: CategoryVector
+): { fromA: Channel[]; fromB: Channel[] } {
+  const setA = new Set(channelsA.map(c => c.id));
+  const setB = new Set(channelsB.map(c => c.id));
+
+  // B 취향에 맞는 A의 독점 채널 (B 상위 카테고리 기준)
+  const bTopCat = (Object.entries(vecB) as [string, number][])
+    .sort((a, b) => b[1] - a[1])[0]?.[0];
+  const fromA = channelsA
+    .filter(c => !setB.has(c.id))
+    .sort((a, b) => {
+      const aMatch = a.customCategory === bTopCat ? 1 : 0;
+      const bMatch = b.customCategory === bTopCat ? 1 : 0;
+      return bMatch - aMatch;
+    })
+    .slice(0, 5);
+
+  // A 취향에 맞는 B의 독점 채널
+  const aTopCat = (Object.entries(vecA) as [string, number][])
+    .sort((a, b) => b[1] - a[1])[0]?.[0];
+  const fromB = channelsB
+    .filter(c => !setA.has(c.id))
+    .sort((a, b) => {
+      const aMatch = a.customCategory === aTopCat ? 1 : 0;
+      const bMatch = b.customCategory === aTopCat ? 1 : 0;
+      return bMatch - aMatch;
+    })
+    .slice(0, 5);
+
+  return { fromA, fromB };
+}
+
+export function getTasteComparison(vecA: CategoryVector, vecB: CategoryVector): {
+  mostSimilar: string;
+  mostDifferent: string;
+  mostSimilarLabel: string;
+  mostDifferentLabel: string;
+  mostSimilarScore: number;
+  mostDifferentScore: number;
+} {
+  const keys = Object.keys(vecA) as (keyof CategoryVector)[];
+  let mostSimilar = keys[0];
+  let mostDifferent = keys[0];
+  let minDiff = Infinity;
+  let maxDiff = -Infinity;
+
+  keys.forEach(k => {
+    const diff = Math.abs(vecA[k] - vecB[k]);
+    if (diff < minDiff) { minDiff = diff; mostSimilar = k; }
+    if (diff > maxDiff) { maxDiff = diff; mostDifferent = k; }
+  });
+
+  return {
+    mostSimilar,
+    mostDifferent,
+    mostSimilarLabel: CATEGORY_LABELS_KO[mostSimilar] || mostSimilar,
+    mostDifferentLabel: CATEGORY_LABELS_KO[mostDifferent] || mostDifferent,
+    mostSimilarScore: Math.round((1 - minDiff) * 100),
+    mostDifferentScore: Math.round((1 - maxDiff) * 100),
+  };
+}
+
+const COMPATIBILITY_TYPE_MAP: Record<string, Record<string, { type: string; desc: string }>> = {
+  tech: {
+    tech:          { type: "테크 듀오", desc: "같은 기술 트렌드를 공유하는 완벽한 파트너예요" },
+    knowledge:     { type: "테크 × 지식 탐구자", desc: "기술과 지식의 교집합. 대화 레벨이 딱 맞아요" },
+    entertainment: { type: "테크 인사이더 × 엔터 마니아", desc: "진지함과 재미 사이. 서로를 채워주는 케미예요" },
+    humor:         { type: "진지함 × 웃음", desc: "테크 이야기 중간에 갑자기 웃음이 터지는 사이예요" },
+    music:         { type: "테크 × 감성 뮤직", desc: "코드와 멜로디, 전혀 다른 세계가 만났어요" },
+    lifestyle:     { type: "테크 × 라이프스타일", desc: "효율과 삶의 질 사이에서 밸런스를 찾는 조합이에요" },
+    news:          { type: "테크 분석가 × 시사 분석가", desc: "세상 돌아가는 걸 가장 빠르게 파악하는 듀오예요" },
+    food:          { type: "테크 × 미식가", desc: "먹기 전에 그 음식의 영양성분을 검색하는 사이예요" },
+    collector:     { type: "테크 × 취향 콜렉터", desc: "전문성과 다양성이 만난 흥미로운 조합이에요" },
+  },
+  knowledge: {
+    knowledge:     { type: "지식 탐구 듀오", desc: "함께 있으면 대화가 끊이지 않는 지적 파트너예요" },
+    entertainment: { type: "지식 × 엔터", desc: "배움에 재미를 더해주는 최고의 조합이에요" },
+    humor:         { type: "지식 × 유머", desc: "진지한 대화 중 갑자기 웃음이 터지는 케미예요" },
+    music:         { type: "지식 × 감성", desc: "머리와 감성이 만났어요. 대화의 깊이가 달라요" },
+    lifestyle:     { type: "지식 × 라이프", desc: "이론과 실전이 만나는 알찬 조합이에요" },
+    news:          { type: "지식 탐구자 × 시사 분석가", desc: "세상을 깊이 있게 이해하는 토론 파트너예요" },
+    food:          { type: "지식 × 미식", desc: "요리의 과학을 함께 탐구하는 사이예요" },
+    tech:          { type: "지식 × 테크", desc: "기술과 지식의 교집합. 영원히 대화가 끊기지 않아요" },
+    collector:     { type: "지식 × 콜렉터", desc: "다양한 분야를 깊이 있게 탐구하는 파트너예요" },
+  },
+  entertainment: {
+    entertainment: { type: "엔터 마니아 듀오", desc: "같이 있으면 콘텐츠가 끝이 없는 사이예요" },
+    humor:         { type: "엔터 × 유머", desc: "같이 있으면 웃음이 끊이지 않는 최강 조합이에요" },
+    music:         { type: "엔터 × 뮤직", desc: "보고 듣는 즐거움을 함께 나누는 사이예요" },
+    lifestyle:     { type: "엔터 × 라이프", desc: "재미있게 사는 법을 함께 탐구하는 파트너예요" },
+    news:          { type: "엔터 × 시사", desc: "재미와 정보 사이에서 절묘한 밸런스를 이루는 조합이에요" },
+    food:          { type: "먹방 & 엔터 듀오", desc: "같이 영상 보며 먹는 게 최고의 데이트인 사이예요" },
+    knowledge:     { type: "엔터 × 지식", desc: "재미에 깊이를 더해주는 알찬 케미예요" },
+    tech:          { type: "엔터 마니아 × 테크", desc: "진지함과 재미 사이. 서로를 채워주는 케미예요" },
+    collector:     { type: "엔터 × 콜렉터", desc: "취향의 스펙트럼이 넓어지는 재미있는 조합이에요" },
+  },
+  humor: {
+    humor:         { type: "유머 코드 듀오", desc: "같이 있으면 배꼽이 빠지는 최강 조합이에요" },
+    lifestyle:     { type: "유머 × 라이프", desc: "웃으며 맛있는 것 먹는 게 최고인 사이예요" },
+    music:         { type: "유머 × 감성", desc: "웃음과 감성 사이에서 풍요로운 케미예요" },
+    news:          { type: "유머 × 시사", desc: "세상을 웃으며 바라보는 유쾌한 파트너예요" },
+    food:          { type: "유머 × 미식", desc: "먹방 보며 배꼽 빠지게 웃는 사이예요" },
+    entertainment: { type: "유머 × 엔터", desc: "같이 있으면 웃음이 끊이지 않는 최강 조합이에요" },
+    knowledge:     { type: "유머 × 지식", desc: "진지한 대화 중 갑자기 웃음이 터지는 케미예요" },
+    tech:          { type: "유머 × 테크", desc: "테크 이야기 중간에 갑자기 웃음이 터지는 사이예요" },
+    collector:     { type: "유머 × 콜렉터", desc: "어디서든 재미를 찾아내는 유쾌한 파트너예요" },
+  },
+  music: {
+    music:         { type: "뮤직 감성 듀오", desc: "같은 음악을 들으며 같은 감성을 느끼는 사이예요" },
+    lifestyle:     { type: "뮤직 × 라이프", desc: "음악과 함께 삶을 즐기는 감성 파트너예요" },
+    food:          { type: "뮤직 × 미식", desc: "좋은 음악과 좋은 음식. 감성이 통하는 사이예요" },
+    entertainment: { type: "뮤직 × 엔터", desc: "보고 듣는 즐거움을 함께 나누는 사이예요" },
+    knowledge:     { type: "뮤직 × 지식", desc: "머리와 감성이 만났어요. 대화의 깊이가 달라요" },
+    humor:         { type: "뮤직 × 유머", desc: "웃음과 감성 사이에서 풍요로운 케미예요" },
+    news:          { type: "뮤직 × 시사", desc: "감성과 현실 사이의 균형을 잡아주는 조합이에요" },
+    tech:          { type: "뮤직 × 테크", desc: "코드와 멜로디, 전혀 다른 세계가 만났어요" },
+    collector:     { type: "뮤직 × 콜렉터", desc: "다양한 취향에 감성을 더해주는 조합이에요" },
+  },
+  lifestyle: {
+    lifestyle:     { type: "라이프스타일 듀오", desc: "삶을 즐기는 방법이 비슷한 베프 조합이에요" },
+    food:          { type: "라이프 × 미식", desc: "먹고 즐기는 모든 것을 함께 탐구하는 파트너예요" },
+    music:         { type: "라이프 × 뮤직", desc: "음악과 함께 삶을 즐기는 감성 파트너예요" },
+    entertainment: { type: "라이프 × 엔터", desc: "재미있게 사는 법을 함께 탐구하는 파트너예요" },
+    humor:         { type: "라이프 × 유머", desc: "웃으며 맛있는 것 먹는 게 최고인 사이예요" },
+    knowledge:     { type: "라이프 × 지식", desc: "이론과 실전이 만나는 알찬 조합이에요" },
+    news:          { type: "라이프 × 시사", desc: "현실적인 시각으로 세상을 바라보는 파트너예요" },
+    tech:          { type: "라이프 × 테크", desc: "효율과 삶의 질 사이에서 밸런스를 찾는 조합이에요" },
+    collector:     { type: "라이프 × 콜렉터", desc: "다양한 취향으로 삶을 풍요롭게 만드는 파트너예요" },
+  },
+  news: {
+    news:          { type: "시사 분석가 듀오", desc: "세상 돌아가는 걸 누구보다 빠르게 파악하는 듀오예요" },
+    knowledge:     { type: "시사 × 지식", desc: "세상을 깊이 있게 이해하는 토론 파트너예요" },
+    tech:          { type: "시사 × 테크", desc: "세상 돌아가는 걸 가장 빠르게 파악하는 듀오예요" },
+    entertainment: { type: "시사 × 엔터", desc: "재미와 정보 사이에서 절묘한 밸런스를 이루는 조합이에요" },
+    humor:         { type: "시사 × 유머", desc: "세상을 웃으며 바라보는 유쾌한 파트너예요" },
+    music:         { type: "시사 × 뮤직", desc: "감성과 현실 사이의 균형을 잡아주는 조합이에요" },
+    lifestyle:     { type: "시사 × 라이프", desc: "현실적인 시각으로 세상을 바라보는 파트너예요" },
+    food:          { type: "시사 × 미식", desc: "세상 걱정을 맛있는 것 먹으며 해소하는 사이예요" },
+    collector:     { type: "시사 × 콜렉터", desc: "다양한 관점으로 세상을 이해하는 파트너예요" },
+  },
+  food: {
+    food:          { type: "미식가 듀오", desc: "맛있는 것을 함께 탐구하는 최고의 파트너예요" },
+    lifestyle:     { type: "미식 × 라이프", desc: "먹고 즐기는 모든 것을 함께 탐구하는 파트너예요" },
+    humor:         { type: "미식 × 유머", desc: "먹방 보며 배꼽 빠지게 웃는 사이예요" },
+    music:         { type: "미식 × 뮤직", desc: "좋은 음악과 좋은 음식. 감성이 통하는 사이예요" },
+    entertainment: { type: "미식 × 엔터", desc: "같이 영상 보며 먹는 게 최고의 데이트인 사이예요" },
+    knowledge:     { type: "미식 × 지식", desc: "요리의 과학을 함께 탐구하는 사이예요" },
+    news:          { type: "미식 × 시사", desc: "세상 걱정을 맛있는 것 먹으며 해소하는 사이예요" },
+    tech:          { type: "미식 × 테크", desc: "먹기 전에 그 음식의 영양성분을 검색하는 사이예요" },
+    collector:     { type: "미식 × 콜렉터", desc: "다양한 취향으로 식탁을 풍요롭게 만드는 파트너예요" },
+  },
+  collector: {
+    collector:     { type: "취향 콜렉터 듀오", desc: "모든 것이 취향인 두 사람. 유튜브 알고리즘도 당황하는 조합이에요" },
+    tech:          { type: "콜렉터 × 테크", desc: "전문성과 다양성이 만난 흥미로운 조합이에요" },
+    knowledge:     { type: "콜렉터 × 지식", desc: "다양한 분야를 깊이 있게 탐구하는 파트너예요" },
+    entertainment: { type: "콜렉터 × 엔터", desc: "취향의 스펙트럼이 넓어지는 재미있는 조합이에요" },
+    humor:         { type: "콜렉터 × 유머", desc: "어디서든 재미를 찾아내는 유쾌한 파트너예요" },
+    music:         { type: "콜렉터 × 뮤직", desc: "다양한 취향에 감성을 더해주는 조합이에요" },
+    lifestyle:     { type: "콜렉터 × 라이프", desc: "다양한 취향으로 삶을 풍요롭게 만드는 파트너예요" },
+    news:          { type: "콜렉터 × 시사", desc: "다양한 관점으로 세상을 이해하는 파트너예요" },
+    food:          { type: "콜렉터 × 미식", desc: "다양한 취향으로 식탁을 풍요롭게 만드는 파트너예요" },
+  },
+};
+
+export function getCompatibilityType(
+  tasteTypeA: string,
+  tasteTypeB: string
+): { type: string; desc: string } {
+  const map = COMPATIBILITY_TYPE_MAP[tasteTypeA] || COMPATIBILITY_TYPE_MAP.collector;
+  return map[tasteTypeB] || map.collector || { type: "독특한 조합", desc: "예측 불가능한 재미있는 케미예요" };
+}
+
+const STORY_TEMPLATES = [
+  (aName: string, bName: string, topA: string, topB: string, score: number) =>
+    score >= 75
+      ? `${aName}와 ${bName}는 유튜브에서 나란히 앉아도 어색하지 않을 사이예요. ${topA}과 ${topB}을 오가며 서로의 피드를 공유하다 보면 시간이 어떻게 가는지 모르는 케미예요.`
+      : `${aName}의 ${topA}와 ${bName}의 ${topB}는 언뜻 달라 보이지만, 같이 있으면 서로의 알고리즘에서 못 보던 채널을 발견하게 되는 사이예요.`,
+  (aName: string, bName: string, topA: string, topB: string, score: number) =>
+    score >= 60
+      ? `${aName}은 ${topA} 채널로 피드를 채우고, ${bName}은 ${topB}로 하루를 시작해요. 다른 것 같아도 "이거 봤어?" 한 마디에 둘 다 탭을 바꾸는 사이예요.`
+      : `${aName}과 ${bName}의 유튜브 피드는 다른 우주처럼 보이지만, 바로 그래서 같이 있으면 볼 게 두 배가 되는 신기한 조합이에요.`,
+];
+
+export function generateCompatibilityStory(
+  vecA: CategoryVector,
+  vecB: CategoryVector,
+  userAName: string,
+  userBName: string,
+  totalScore: number
+): string {
+  const topA = CATEGORY_LABELS_KO[(Object.entries(vecA) as [string, number][]).sort((a,b) => b[1]-a[1])[0]?.[0]] || "다양한 콘텐츠";
+  const topB = CATEGORY_LABELS_KO[(Object.entries(vecB) as [string, number][]).sort((a,b) => b[1]-a[1])[0]?.[0]] || "다양한 콘텐츠";
+  const idx = totalScore >= 60 ? 0 : 1;
+  return STORY_TEMPLATES[idx](userAName, userBName, topA, topB, totalScore);
 }
