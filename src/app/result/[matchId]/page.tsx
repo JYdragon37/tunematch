@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getMatchUrl } from "@/lib/utils";
 import type { MatchResult } from "@/types";
 import ShareCardModal from "./ShareCardModal";
@@ -8,7 +8,7 @@ import SaveResultModal from "./SaveResultModal";
 import { SoloResultView } from "@/components/result/SoloResultView";
 import { CompatibilityView } from "@/components/result/CompatibilityView";
 
-export default function ResultPage({ params }: { params: { matchId: string } }) {
+function ResultPageContent({ params }: { params: { matchId: string } }) {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,8 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
   const [showCelebration, setShowCelebration] = useState(false);
   const prevResultRef = useRef<MatchResult | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isComparingMode = searchParams.get("comparing") === "true";
   const pollRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -34,6 +36,10 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
       setSessionStatus(data.sessionStatus || data.status);
 
       if (data.status === "done" && data.result) {
+        // comparing 모드에서 완료되면 URL 파라미터 제거
+        if (isComparingMode) {
+          router.replace(`/result/${params.matchId}`);
+        }
         // 이전 결과가 솔로(tasteType 있음)이고 새 결과가 비교(tasteType 없음)이면 축하 오버레이
         if (prevResultRef.current?.tasteType && !data.result.tasteType) {
           setShowCelebration(true);
@@ -75,6 +81,20 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 2000);
   };
+
+  // ─── B가 compare 직후 이동한 경우 - 궁합 완성 전까지 전용 로딩 표시 ───
+  if (isComparingMode && sessionStatus !== "done") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center px-5">
+          <div className="text-5xl mb-5">🎯</div>
+          <h1 className="text-2xl font-black text-text-primary mb-2">궁합 분석 중...</h1>
+          <p className="text-text-secondary text-sm mb-6">두 사람의 유튜브 취향을 비교하고 있어요</p>
+          <div className="animate-spin w-10 h-10 border-3 border-primary border-t-transparent rounded-full mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   // ─── 로딩 상태 ───
   if (loading && !result) {
@@ -207,5 +227,17 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
         <SaveResultModal result={result} onClose={() => setShowSave(false)} onNew={() => router.push("/connect")} />
       )}
     </main>
+  );
+}
+
+export default function ResultPage({ params }: { params: { matchId: string } }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-10 h-10 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    }>
+      <ResultPageContent params={params} />
+    </Suspense>
   );
 }

@@ -70,7 +70,8 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       }
 
       sessionStorage.removeItem(`solo_${params.matchId}`);
-      router.push(`/result/${params.matchId}`);
+      // comparing=true 플래그로 결과 페이지에서 A 솔로 대신 로딩 화면 표시
+      router.push(`/result/${params.matchId}?comparing=true`);
     } catch (e: any) {
       setCompareError(e.message || "비교 중 오류가 발생했습니다. 다시 시도해주세요.");
       setComparing(false);
