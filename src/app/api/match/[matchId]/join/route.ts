@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, updateSessionChannelsB } from "@/lib/db";
-import { fetchSubscribedChannels, fetchChannelStats, fetchLikedVideos } from "@/lib/youtube";
+import { fetchSubscribedChannels } from "@/lib/youtube";
 import {
   buildCategoryVector, classifyTasteType, calcDiversityIndex, getTopCategories,
-  getFriendType, generateSoloComment, analyzeChannelStats, analyzeLikedVideos,
+  getFriendType, generateSoloComment,
 } from "@/lib/algorithm";
 import { getCuratedRecommendations, getTrendingRecommendations } from "@/data/curated-channels";
 import { v4 as uuidv4 } from "uuid";
@@ -21,15 +21,10 @@ export async function POST(
     if (session.status === "expired") return NextResponse.json({ error: "만료된 링크" }, { status: 410 });
     if (session.status === "done") return NextResponse.json({ error: "이미 완료된 매칭" }, { status: 409 });
 
-    // ① B의 구독 채널 수집
+    // ① B의 구독 채널 수집 (채널통계/좋아요는 타임아웃 방지로 제외)
     const channelsB: Channel[] = await fetchSubscribedChannels(accessToken || "", "B");
 
-    // ② B의 솔로 분석 (채널통계 + 좋아요 병렬)
-    const [channelStatsRaw, likedVideos] = await Promise.all([
-      fetchChannelStats(accessToken || "", channelsB),
-      fetchLikedVideos(accessToken || ""),
-    ]);
-
+    // ② 기본 솔로 분석 (빠른 연산만)
     const vecB = buildCategoryVector(channelsB);
     const tasteType = classifyTasteType(vecB);
     const diversityIndex = calcDiversityIndex(vecB);
@@ -37,14 +32,9 @@ export async function POST(
     const { type: friendType, reason: friendTypeReason } = getFriendType(tasteType);
     const { comment, commentType } = generateSoloComment(tasteType, diversityIndex);
 
-    const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsB, likedVideos);
-    const subscribedChannelIds = new Set(channelsB.map((c) => c.id));
-    const likedVideoInsight = analyzeLikedVideos(likedVideos, vecB, subscribedChannelIds);
-
-    const dominantCountry = (channelStatsData as any)?.dominantCountry || "KR";
     const subscribedIds = new Set(channelsB.map((c) => c.id));
-    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, dominantCountry, 5);
-    const trendingRecs = getTrendingRecommendations(tasteType, subscribedIds, dominantCountry, 5);
+    const curatedRecs = getCuratedRecommendations(tasteType, subscribedIds, "KR", 5);
+    const trendingRecs = getTrendingRecommendations(tasteType, subscribedIds, "KR", 5);
 
     const channelScore = Math.min(30, Math.round(channelsB.length / 2));
     const bSoloResult = {
@@ -70,8 +60,6 @@ export async function POST(
       friendTypeReason,
       topCategories,
       channelCount: channelsB.length,
-      channelStatsData: channelStatsData || undefined,
-      likedVideoInsight: likedVideoInsight || undefined,
       curatedRecs,
       trendingRecs,
       createdAt: new Date().toISOString(),
@@ -87,7 +75,8 @@ export async function POST(
 
     return NextResponse.json({ soloResult: bSoloResult, userAName: session.userAName });
   } catch (error) {
-    console.error("[match/join error]", error);
-    return NextResponse.json({ error: "분석 실패" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[match/join error]", msg);
+    return NextResponse.json({ error: "분석 실패", detail: msg }, { status: 500 });
   }
 }
