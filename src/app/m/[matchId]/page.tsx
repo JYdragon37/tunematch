@@ -31,14 +31,12 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
     fetchMatchData();
   }, [params.matchId]);
 
-  // 세션 있으면 자동으로 join
+  // B가 이미 join한 경우에만 solo 페이지로 이동 (자동 join은 제거 - 다른 계정으로 잘못 join 방지)
   useEffect(() => {
-    if (status === "authenticated" && session && matchData && matchData.status === "waiting") {
-      handleJoin();
-    }
-    if (status === "authenticated" && session && matchData && matchData.status === "b_joined") {
-      // 이미 B가 join했으면 solo 페이지로
-      router.push(`/m/${params.matchId}/solo`);
+    if (status === "authenticated" && session && matchData) {
+      if (matchData.status === "b_joined") {
+        router.push(`/m/${params.matchId}/solo`);
+      }
     }
   }, [status, session, matchData]);
 
@@ -165,6 +163,10 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
     );
   }
 
+  // A가 자기 링크를 열었는지 확인 (이름 기준 - 같은 이름이면 경고)
+  const isOwnLink = status === "authenticated" && session &&
+    matchData && session.user?.name === matchData.userAName;
+
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-5 py-4 text-center">
@@ -180,6 +182,17 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
           </h1>
           <p className="text-xl font-bold text-text-primary">궁합 분석 초대장 🎯</p>
         </div>
+
+        {/* 현재 로그인 계정 표시 */}
+        {status === "authenticated" && session?.user && (
+          <div className={`rounded-2xl p-3 text-center text-xs ${isOwnLink ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-200"}`}>
+            {isOwnLink ? (
+              <p className="text-amber-700 font-semibold">⚠️ 본인이 만든 링크입니다. 다른 계정으로 접속해주세요.</p>
+            ) : (
+              <p className="text-gray-500">현재 로그인: <strong className="text-gray-700">{session.user.name || session.user.email}</strong> 계정으로 분석됩니다</p>
+            )}
+          </div>
+        )}
 
         {/* 흐릿한 점수 미리보기 */}
         <div className="bg-white rounded-3xl p-6 border border-border relative overflow-hidden">
@@ -207,7 +220,7 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
           ))}
         </div>
 
-        <Button variant="google" size="lg" fullWidth onClick={handleConnect} loading={connecting}>
+        <Button variant="google" size="lg" fullWidth onClick={handleConnect} loading={connecting} disabled={!!isOwnLink}>
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
