@@ -1,4 +1,4 @@
-import type { Channel, CategoryKey, CategoryVector, MatchResult, ScoreDetail } from "@/types";
+import type { Channel, CategoryKey, CategoryVector, MatchResult, ScoreDetail, TasteType, TopCategory } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
 const CATEGORY_WEIGHTS: Record<CategoryKey, number> = {
@@ -231,4 +231,83 @@ export function getScoreDetails(result: MatchResult): ScoreDetail[] {
     { label: "유머 코드", score: result.humorScore, maxScore: 100, key: "humor" },
     { label: "시청 패턴", score: result.patternScore, maxScore: 100, key: "pattern" },
   ];
+}
+
+// ─── Solo Taste Analysis ───
+
+const CATEGORY_LABELS: Record<string, string> = {
+  entertainment: "엔터/게임", knowledge: "지식/교육", humor: "유머/밈",
+  lifestyle: "라이프스타일", music: "음악", news: "뉴스/시사", food: "음식/요리", tech: "테크",
+};
+const CATEGORY_EMOJI: Record<string, string> = {
+  entertainment: "🎮", knowledge: "📚", humor: "😂", lifestyle: "🍳",
+  music: "🎵", news: "📰", food: "🍜", tech: "💻",
+};
+
+export function classifyTasteType(vec: CategoryVector): TasteType {
+  if (vec.tech > 0.30) return "tech";
+  if (vec.knowledge + vec.tech > 0.40) return "knowledge";
+  if (vec.entertainment > 0.30) return "entertainment";
+  if (vec.humor > 0.25) return "humor";
+  if (vec.music > 0.30) return "music";
+  if ((vec.food || 0) + vec.lifestyle > 0.35) return "lifestyle";
+  if (vec.news > 0.25) return "news";
+  return "collector";
+}
+
+export function calcDiversityIndex(vec: CategoryVector): number {
+  const values = Object.values(vec) as number[];
+  const hhi = values.reduce((sum, v) => sum + v * v, 0);
+  return Math.round((1 - hhi) / (1 - 0.125) * 100);
+}
+
+export function getTopCategories(vec: CategoryVector): TopCategory[] {
+  return (Object.entries(vec) as [CategoryKey, number][])
+    .map(([key, val]) => ({
+      key,
+      percentage: Math.round(val * 100),
+      label: CATEGORY_LABELS[key] || key,
+      emoji: CATEGORY_EMOJI[key] || "📺",
+    }))
+    .sort((a, b) => b.percentage - a.percentage)
+    .filter((c) => c.percentage > 0)
+    .slice(0, 5);
+}
+
+const FRIEND_TYPE_MAP: Record<TasteType, { type: TasteType; reason: string }> = {
+  knowledge:     { type: "entertainment", reason: "지식에 유머를 더해주는 사이. 대화가 끊이질 않아요." },
+  entertainment: { type: "knowledge",     reason: "엔터에 깊이를 더해주는 사이. 유튜브 추천이 매번 새로워요." },
+  humor:         { type: "lifestyle",     reason: "같이 있으면 웃고 먹고 행복해지는 조합이에요." },
+  music:         { type: "collector",     reason: "음악 외에도 다양한 취향을 공유할 수 있는 사이예요." },
+  lifestyle:     { type: "humor",         reason: "맛있는 것 먹으며 웃을 수 있는 찐 친구 조합이에요." },
+  news:          { type: "knowledge",     reason: "세상 이야기를 같이 분석하는 토론 파트너예요." },
+  tech:          { type: "knowledge",     reason: "기술과 지식의 교집합. 대화 레벨이 딱 맞아요." },
+  collector:     { type: "music",         reason: "다양한 취향에 감성을 더해주는 조합이에요." },
+};
+
+export function getFriendType(tasteType: TasteType): { type: TasteType; reason: string } {
+  return FRIEND_TYPE_MAP[tasteType];
+}
+
+export function generateSoloComment(tasteType: TasteType, diversityIndex: number): { comment: string; commentType: string } {
+  const typeLabel: Record<TasteType, string> = {
+    knowledge: "지식 탐험가형", entertainment: "엔터 마니아형", humor: "유머 감성파형",
+    music: "뮤직 비주얼형", lifestyle: "미식 라이프형", news: "시사 분석가형",
+    tech: "테크 인사이더형", collector: "취향 콜렉터형",
+  };
+  const diversityLabel = diversityIndex >= 66 ? "다양형" : diversityIndex >= 36 ? "균형형" : "집중형";
+  const comments: Record<TasteType, string> = {
+    knowledge: "배우고 싶은 욕구가 강한 사람. 유튜브가 당신의 두 번째 도서관이에요.",
+    entertainment: "콘텐츠 자체를 즐기는 진짜 팬. 알고리즘이 당신을 너무 잘 알고 있어요.",
+    humor: "웃음에 진심인 사람. 당신의 유튜브 피드는 항상 유쾌할 거예요.",
+    music: "감성과 리듬으로 세상을 느끼는 타입. 플레이리스트가 곧 일기예요.",
+    lifestyle: "먹고 사는 것에 진지하게 진심인 사람. 삶의 질에 가장 많이 투자해요.",
+    news: "세상 돌아가는 것에 예민하게 관심 있는 타입. 정보가 곧 힘이에요.",
+    tech: "기술 트렌드를 누구보다 먼저 파악하는 얼리어답터. 미래를 먼저 보는 사람.",
+    collector: "모든 것이 취향인 사람. 어디서든 재미를 발견하는 능력자 타입이에요.",
+  };
+  return {
+    comment: comments[tasteType],
+    commentType: `${typeLabel[tasteType]} · ${diversityLabel}`,
+  };
 }

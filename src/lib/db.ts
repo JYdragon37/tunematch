@@ -87,6 +87,11 @@ export async function saveResult(result: MatchResult): Promise<void> {
     user_b_vector: result.userBVector,
     user_a_name: result.userAName,
     user_b_name: result.userBName,
+    taste_type: result.tasteType ?? null,
+    diversity_index: result.diversityIndex ?? null,
+    friend_type: result.friendType ?? null,
+    friend_type_reason: result.friendTypeReason ?? null,
+    top_categories: result.topCategories ?? null,
     created_at: result.createdAt,
   });
   if (error) throw new Error(`saveResult failed: ${error.message}`);
@@ -199,6 +204,11 @@ function rowToResult(row: any): MatchResult {
     recommendations: row.recommendations || [],
     userAVector: row.user_a_vector || {},
     userBVector: row.user_b_vector || {},
+    tasteType: row.taste_type ?? undefined,
+    diversityIndex: row.diversity_index ?? undefined,
+    friendType: row.friend_type ?? undefined,
+    friendTypeReason: row.friend_type_reason ?? undefined,
+    topCategories: row.top_categories ?? undefined,
     createdAt: row.created_at,
   };
 }

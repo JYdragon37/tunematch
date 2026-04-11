@@ -9,6 +9,7 @@ import { getScoreDetails } from "@/lib/algorithm";
 import type { MatchResult } from "@/types";
 import ShareCardModal from "./ShareCardModal";
 import SaveResultModal from "./SaveResultModal";
+import { SoloResultView } from "@/components/result/SoloResultView";
 
 const SCORE_COLOR_MAP: Record<string, string> = {
   channel: "#FF4D00",
@@ -82,7 +83,24 @@ export default function ResultPage({ params }: { params: { matchId: string } }) 
     );
   }
 
+  const isSolo = result.tasteType !== undefined;
   const scoreDetails = getScoreDetails(result);
+
+  // 솔로 분석: 전용 뷰 렌더링
+  if (isSolo) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="max-w-md mx-auto px-5 py-4 text-center">
+          <span className="font-black text-xl text-text-primary tracking-tight">
+            <span className="text-primary">TUNE</span>MATCH
+          </span>
+        </div>
+        <div className="max-w-md mx-auto px-5 pb-32">
+          <SoloResultView result={result} />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background">
