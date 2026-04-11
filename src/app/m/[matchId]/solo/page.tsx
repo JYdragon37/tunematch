@@ -9,6 +9,7 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [userAName, setUserAName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [enriching, setEnriching] = useState(false); // 전체 분석 진행 중
   const [comparing, setComparing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
   }, [params.matchId]);
 
   const loadSoloResult = async () => {
-    // 1. sessionStorage에서 먼저 시도
+    // 1. sessionStorage에서 기본 결과 즉시 표시
     try {
       const stored = sessionStorage.getItem(`solo_${params.matchId}`);
       if (stored) {
@@ -28,11 +29,13 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
         setResult(r);
         setUserAName(aName || "");
         setLoading(false);
+        // 기본 결과 보여주면서 백그라운드에서 전체 분석 시작
+        triggerFullAnalysis(aName || "");
         return;
       }
     } catch {}
 
-    // 2. 없으면 API로 조회
+    // 2. DB에서 기존 결과 조회
     try {
       const res = await fetch(`/api/match/${params.matchId}/b-solo`);
       if (!res.ok) {
@@ -40,12 +43,46 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
         return;
       }
       const data = await res.json();
+      const hasFullData = !!(data.result?.channelStatsData);
       setResult(data.result);
       setUserAName(data.userAName || "");
+      setLoading(false);
+      // 전체 분석 데이터 없으면 백그라운드 실행
+      if (!hasFullData) {
+        triggerFullAnalysis(data.userAName || "");
+      }
     } catch {
       setLoadError("결과를 불러올 수 없어요. 다시 시도해주세요.");
-    } finally {
       setLoading(false);
+    }
+  };
+
+  // 백그라운드에서 전체 분석 실행 (채널통계 + 좋아요)
+  const triggerFullAnalysis = async (aName: string) => {
+    const accessToken = (session as any)?.accessToken || "";
+    if (!accessToken) return; // 토큰 없으면 기본 분석으로 유지
+
+    setEnriching(true);
+    try {
+      const res = await fetch(`/api/match/${params.matchId}/b-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken, userName: aName }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResult(data.soloResult);
+        if (data.userAName) setUserAName(data.userAName);
+        // sessionStorage 업데이트
+        sessionStorage.setItem(`solo_${params.matchId}`, JSON.stringify({
+          result: data.soloResult,
+          userAName: data.userAName || aName,
+        }));
+      }
+    } catch {
+      // 전체 분석 실패해도 기본 결과는 유지
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -60,7 +97,6 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "비교 실패" }));
-        // 이미 비교 완료된 경우 결과 페이지로 이동
         if (res.status === 409) {
           sessionStorage.removeItem(`solo_${params.matchId}`);
           router.push(`/result/${params.matchId}`);
@@ -71,7 +107,6 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       }
 
       sessionStorage.removeItem(`solo_${params.matchId}`);
-      // comparing 플래그 → sessionStorage (URL 파라미터 방식은 Suspense 리마운트 루프 유발)
       sessionStorage.setItem(`comparing_${params.matchId}`, "true");
       router.push(`/result/${params.matchId}`);
     } catch (e: any) {
@@ -119,13 +154,21 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       </div>
 
       <div className="max-w-md mx-auto px-5 pb-32">
-        {/* 내 분석 먼저 보여주는 안내 */}
+        {/* 안내 배너 */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 text-center">
           <p className="text-sm font-bold text-blue-800">내 유튜브 취향 분석 완료!</p>
           <p className="text-xs text-blue-600 mt-0.5">
             아래에서 확인한 후 <strong>{userAName || "친구"}님</strong>과 궁합을 비교해보세요
           </p>
         </div>
+
+        {/* 심화 분석 로딩 중 배너 */}
+        {enriching && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4 flex items-center gap-3">
+            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
+            <p className="text-xs text-amber-700">구독 기록관 상세 데이터 분석 중...</p>
+          </div>
+        )}
 
         <SoloResultView result={result} hideInvite />
 
@@ -141,7 +184,6 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
             </p>
           </div>
 
-          {/* 에러 배너 - 페이지 교체 없이 인라인 표시 */}
           {compareError && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-center">
               <p className="text-xs font-semibold text-red-700">{compareError}</p>
