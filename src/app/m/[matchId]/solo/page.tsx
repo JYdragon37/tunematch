@@ -10,7 +10,8 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
   const [userAName, setUserAName] = useState("");
   const [loading, setLoading] = useState(true);
   const [comparing, setComparing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [compareError, setCompareError] = useState<string | null>(null);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -42,7 +43,7 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
       setResult(data.result);
       setUserAName(data.userAName || "");
     } catch {
-      setError("결과를 불러올 수 없어요. 다시 시도해주세요.");
+      setLoadError("결과를 불러올 수 없어요. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
@@ -50,20 +51,22 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
 
   const handleCompare = async () => {
     setComparing(true);
+    setCompareError(null);
     try {
       const res = await fetch(`/api/match/${params.matchId}/compare`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({ error: "비교 실패" }));
         throw new Error(err.error || "비교 실패");
       }
-      // sessionStorage 정리
+
       sessionStorage.removeItem(`solo_${params.matchId}`);
       router.push(`/result/${params.matchId}`);
     } catch (e: any) {
-      setError(e.message || "비교 중 오류가 발생했습니다.");
+      setCompareError(e.message || "비교 중 오류가 발생했습니다. 다시 시도해주세요.");
       setComparing(false);
     }
   };
@@ -79,12 +82,12 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
     );
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-5">
         <div className="text-center">
           <div className="text-4xl mb-4">😔</div>
-          <p className="font-semibold text-text-primary mb-2">{error}</p>
+          <p className="font-semibold text-text-primary mb-2">{loadError}</p>
           <button
             onClick={() => router.push(`/m/${params.matchId}`)}
             className="text-sm text-primary underline"
@@ -128,6 +131,15 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
               두 사람의 취향 싱크로율과 공통 채널을 확인해요
             </p>
           </div>
+
+          {/* 에러 배너 - 페이지 교체 없이 인라인 표시 */}
+          {compareError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-center">
+              <p className="text-xs font-semibold text-red-700">{compareError}</p>
+              <p className="text-xs text-red-500 mt-0.5">아래 버튼을 다시 눌러주세요</p>
+            </div>
+          )}
+
           <button
             onClick={handleCompare}
             disabled={comparing}

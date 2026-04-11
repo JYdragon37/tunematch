@@ -15,9 +15,8 @@ export async function POST(
     if (!session) return NextResponse.json({ error: "세션 없음" }, { status: 404 });
     const status = session.status as string;
     if (status === "done") return NextResponse.json({ error: "이미 완료" }, { status: 409 });
-    if (status !== "b_joined") return NextResponse.json({ error: "B가 아직 연동하지 않았습니다" }, { status: 422 });
 
-    // channels_a, channels_b 조회
+    // channels_a, channels_b 조회 (status 체크보다 데이터 존재 여부가 신뢰성 있음)
     const { data: row, error: rowErr } = await supabaseAdmin
       .from("match_sessions")
       .select("channels_a, channels_b, user_b_name")
@@ -31,8 +30,11 @@ export async function POST(
     try { channelsA = JSON.parse(row.channels_a || "[]"); } catch {}
     try { channelsB = JSON.parse(row.channels_b || "[]"); } catch {}
 
-    if (!channelsA.length || !channelsB.length) {
-      return NextResponse.json({ error: "채널 데이터 없음" }, { status: 422 });
+    if (!channelsA.length) {
+      return NextResponse.json({ error: "A의 채널 데이터가 없습니다. A가 다시 연동해야 합니다." }, { status: 422 });
+    }
+    if (!channelsB.length) {
+      return NextResponse.json({ error: "B의 채널 데이터가 없습니다. 다시 연동해주세요." }, { status: 422 });
     }
 
     // A vs B 궁합 분석
