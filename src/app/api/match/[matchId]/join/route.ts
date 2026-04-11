@@ -23,19 +23,30 @@ export async function POST(
 
     // Supabase에서 A의 채널 데이터 가져오기
     const { supabaseAdmin } = await import("@/lib/supabase");
-    const { data: sessionRow } = await supabaseAdmin
+    const { data: sessionRow, error: sessionRowError } = await supabaseAdmin
       .from("match_sessions")
       .select("channels_a")
       .eq("id", params.matchId)
       .single();
 
+    if (sessionRowError) {
+      console.error("[match/join] channels_a 조회 실패:", sessionRowError.message);
+    }
+
     let channelsA: Channel[] = [];
     if (sessionRow?.channels_a) {
       try {
         channelsA = JSON.parse(sessionRow.channels_a);
-      } catch {
-        channelsA = [];
+      } catch (parseErr) {
+        console.error("[match/join] channels_a JSON 파싱 실패:", parseErr);
       }
+    }
+
+    if (channelsA.length === 0) {
+      return NextResponse.json({
+        error: "CHANNELS_UNAVAILABLE",
+        message: "A 유저의 채널 데이터를 찾을 수 없습니다. A 유저가 다시 연동해야 합니다."
+      }, { status: 422 });
     }
 
     await updateSession(params.matchId, {

@@ -35,7 +35,13 @@ export async function POST(req: NextRequest) {
       .eq("id", matchId)
       .single();
 
-    if (sessionErr) console.error("[solo] session 조회 에러:", sessionErr.message);
+    if (sessionErr) {
+      console.error("[solo] session channels_a 조회 에러:", sessionErr.message);
+      return NextResponse.json({
+        error: "SESSION_READ_ERROR",
+        message: "채널 데이터를 읽을 수 없습니다. 다시 연동해주세요."
+      }, { status: 500 });
+    }
 
     let channelsA: Channel[] = [];
     let usedMock = false;
@@ -126,7 +132,7 @@ export async function POST(req: NextRequest) {
       sendMessage(msg).catch(console.error);
     }).catch(console.error);
 
-    return NextResponse.json({ resultId: result.id });
+    return NextResponse.json({ resultId: result.id, usedMock });
   } catch (error) {
     console.error("[match/solo error]", error);
     return NextResponse.json({ error: "분석 실패" }, { status: 500 });

@@ -37,14 +37,22 @@ export default function ConnectCallbackPage() {
           accessToken,
         }),
       })
-        .then((r) => r.json())
-        .then(({ matchId }) => {
-          if (matchId) router.push(`/share?matchId=${matchId}`);
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) {
+            const msg =
+              data.error === "YOUTUBE_TOKEN_EXPIRED" ? "YouTube 토큰이 만료됐어요. 다시 로그인해주세요." :
+              data.error === "YOUTUBE_SCOPE_MISSING" ? "YouTube 구독 채널 접근 권한이 없어요. 다시 로그인 후 동의해주세요." :
+              data.error === "YOUTUBE_TOKEN_MISSING" ? "YouTube 연동이 필요합니다. 다시 로그인해주세요." :
+              data.message || "분석 세션 생성에 실패했어요.";
+            throw new Error(msg);
+          }
+          if (data.matchId) router.push(`/share?matchId=${data.matchId}`);
           else throw new Error("matchId 없음");
         })
-        .catch(() => {
-          setError("분석 세션 생성에 실패했어요. 다시 시도해주세요.");
-          setTimeout(() => router.push("/connect"), 2500);
+        .catch((err) => {
+          setError(err.message || "분석 세션 생성에 실패했어요. 다시 시도해주세요.");
+          setTimeout(() => router.push("/connect"), 3000);
         });
     }
   }, [status, session]);

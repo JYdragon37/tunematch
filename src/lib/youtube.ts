@@ -101,13 +101,14 @@ export async function fetchSubscribedChannels(
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        console.error("[YouTube API Error]", JSON.stringify(error));
-        if (channels.length === 0) {
-          console.log("[YouTube] API 실패, mock 데이터로 폴백");
-          return userSlot === "A" ? mockChannelsA : mockChannelsB;
-        }
-        break;
+        const errorBody = await res.json().catch(() => ({}));
+        const status = res.status;
+        console.error("[YouTube API Error]", status, JSON.stringify(errorBody));
+
+        if (status === 401) throw new Error("YOUTUBE_TOKEN_EXPIRED");
+        if (status === 403) throw new Error("YOUTUBE_SCOPE_MISSING");
+        if (status === 429) throw new Error("YOUTUBE_QUOTA_EXCEEDED");
+        throw new Error(`YOUTUBE_API_ERROR:${status}`);
       }
 
       const data = await res.json();
@@ -137,7 +138,7 @@ export async function fetchSubscribedChannels(
 
     console.log(`[YouTube] 구독 채널 ${channels.length}개 수집 완료`);
   } catch (err) {
-    console.error("[YouTube fetch error]", err);
+    throw err;
   }
 
   return channels;

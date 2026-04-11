@@ -126,12 +126,13 @@ export async function getResult(id: string): Promise<MatchResult | null> {
 // ─── Saved Results ───
 
 export async function saveUserResult(userId: string, matchResultId: string): Promise<SavedResult> {
-  const { data: resultRow } = await supabaseAdmin
+  const { data: resultRow, error: resultFindError } = await supabaseAdmin
     .from("match_results")
     .select()
     .eq("id", matchResultId)
     .single();
 
+  if (resultFindError) throw new Error(`DB 조회 실패: ${resultFindError.message}`);
   if (!resultRow) throw new Error("Match result not found");
 
   const { data: row, error } = await supabaseAdmin
