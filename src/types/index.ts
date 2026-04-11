@@ -126,6 +126,12 @@ export interface LikedVideoInsight {
   surpriseCategory?: CategoryKey;
   surpriseCategoryLabel?: string;
   totalLiked: number;
+  top5LikedCategories?: Array<{
+    category: CategoryKey;
+    label: string;
+    count: number;
+    percent: number;
+  }>;
 }
 
 export interface CuratedChannel {

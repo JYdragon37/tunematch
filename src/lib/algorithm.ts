@@ -440,6 +440,68 @@ export function analyzeChannelStats(
   // ⑩ 오랜 인연 (구독 날짜 오래된 순 TOP 5)
   const top5Oldest = withDates.slice(0, 5).map(toItem);
 
+  // 📺 영상 가장 많이 올린 채널 TOP 5
+  const top5ByVideoCount = [...withSubs]
+    .filter(s => (s as any).videoCount > 0)
+    .sort((a, b) => ((b as any).videoCount || 0) - ((a as any).videoCount || 0))
+    .slice(0, 5)
+    .map(s => ({ ...toItem(s), videoCount: (s as any).videoCount as number }));
+
+  // 🔤 채널명 자주 나오는 키워드 TOP 10
+  const stopWords = new Set(["the","a","an","of","and","in","for","to","is","on",
+    "official","channel","tv","youtube","브이로그","채널","공식","유튜브","with","by"]);
+  const wordCount: Record<string, number> = {};
+  withSubs.forEach(s => {
+    s.title.toLowerCase()
+      .replace(/[^\w\s가-힣]/g, " ")
+      .split(/\s+/)
+      .filter(w => w.length >= 2 && !stopWords.has(w) && isNaN(Number(w)))
+      .forEach(w => { wordCount[w] = (wordCount[w] || 0) + 1; });
+  });
+  const topKeywords = Object.entries(wordCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word, count]) => ({ word, count }));
+
+  // 🏃 가장 오래된 채널 TOP 5 (채널 개설일 기준)
+  const top5OldestChannels = [...withSubs]
+    .filter(s => (s as any).channelCreatedAt)
+    .sort((a, b) =>
+      new Date((a as any).channelCreatedAt).getTime() -
+      new Date((b as any).channelCreatedAt).getTime()
+    )
+    .slice(0, 5)
+    .map(s => ({
+      ...toItem(s),
+      channelCreatedAt: (s as any).channelCreatedAt as string,
+      channelAgeYears: Math.floor(
+        (Date.now() - new Date((s as any).channelCreatedAt).getTime()) / (365.25 * 24 * 3600 * 1000)
+      ),
+    }));
+
+  // 🌙 평균 채널 나이 (채널 개설일 기준)
+  const channelsWithAge = withSubs.filter(s => (s as any).channelCreatedAt);
+  const avgChannelAgeYears = channelsWithAge.length > 0
+    ? Math.round(
+        channelsWithAge.reduce((sum, s) =>
+          sum + (Date.now() - new Date((s as any).channelCreatedAt).getTime()) / (365.25 * 24 * 3600 * 1000)
+        , 0) / channelsWithAge.length
+      )
+    : 0;
+
+  // 🔮 나의 안목 채널 TOP 5 (일찍 구독 + 지금 구독자 많은 채널)
+  // = 구독한 지 2년 이상 + 현재 구독자 100만 이상 채널
+  const twoYearsAgo = Date.now() - 2 * 365.25 * 24 * 3600 * 1000;
+  const earlyBirdChannels = withSubs
+    .filter(s =>
+      s.subscribedAt &&
+      new Date(s.subscribedAt).getTime() < twoYearsAgo &&
+      s.subscriberCount >= 1_000_000
+    )
+    .sort((a, b) => b.subscriberCount - a.subscriberCount)
+    .slice(0, 5)
+    .map(toItem);
+
   return {
     topSubscriber: toItem(topSub),
     smallestSubscriber: toItem(smallestSub),
@@ -461,12 +523,18 @@ export function analyzeChannelStats(
     countryRepresentatives,
     recentSubCount,
     top5Oldest,
+    top5ByVideoCount,
+    topKeywords,
+    top5OldestChannels,
+    avgChannelAgeYears,
+    earlyBirdChannels,
   } as any;
 }
 
 export function analyzeLikedVideos(
   likedVideos: LikedVideo[],
-  subVector: CategoryVector
+  subVector: CategoryVector,
+  subscribedChannelIds?: Set<string>
 ): LikedVideoInsight | null {
   if (likedVideos.length === 0) return null;
 
@@ -500,6 +568,23 @@ export function analyzeLikedVideos(
     lifestyle: "라이프스타일", music: "음악", news: "뉴스/시사", food: "음식/요리", tech: "테크",
   };
 
+  // 좋아요 카테고리 TOP 5
+  const top5LikedCategories = (Object.entries(likeCounts) as [CategoryKey, number][])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([cat, count]) => ({
+      category: cat,
+      label: CATEGORY_LABELS_LOCAL[cat] || cat,
+      count,
+      percent: Math.round((count / likedVideos.length) * 100),
+    }));
+
+  // 구독 안 했는데 좋아요 누른 채널 채널ID 목록
+  // (실제 채널 정보는 없으므로 videoId/title만)
+  const nonSubLiked = likedVideos
+    .filter((v: any) => v.channelId && !subscribedChannelIds?.has(v.channelId))
+    .slice(0, 5);
+
   return {
     topCategory,
     topCategoryLabel: CATEGORY_LABELS_LOCAL[topCategory] || topCategory,
@@ -507,6 +592,7 @@ export function analyzeLikedVideos(
     surpriseCategory,
     surpriseCategoryLabel: surpriseCategory ? CATEGORY_LABELS_LOCAL[surpriseCategory] : undefined,
     totalLiked: likedVideos.length,
+    top5LikedCategories,
   };
 }
 

@@ -153,6 +153,8 @@ export interface ChannelStat {
   subscriberCount: number;
   country?: string;
   subscribedAt?: string;  // subscription date (from subscription snippet)
+  videoCount?: number;        // 채널 영상 수
+  channelCreatedAt?: string;  // 채널 개설일
 }
 
 function formatSubscriberCount(count: number): string {
@@ -178,6 +180,8 @@ export async function fetchChannelStats(
       id: ch.id,
       title: ch.title,
       subscriberCount: Math.floor(Math.random() * 5_000_000) + 1_000,
+      videoCount: Math.floor(Math.random() * 500) + 10,
+      channelCreatedAt: new Date(Date.now() - (3 + i) * 365 * 24 * 3600 * 1000).toISOString(),
       country: i % 3 === 0 ? "US" : "KR",
       subscribedAt: subDateMap.get(ch.id) ||
         new Date(Date.now() - (i + 1) * 30 * 24 * 3600 * 1000).toISOString(),
@@ -214,6 +218,8 @@ export async function fetchChannelStats(
           id: item.id,
           title: item.snippet?.title || "",
           subscriberCount: parseInt(item.statistics?.subscriberCount || "0", 10),
+          videoCount: parseInt(item.statistics?.videoCount || "0", 10),
+          channelCreatedAt: item.snippet?.publishedAt,
           country: item.snippet?.country,
           subscribedAt: subDateMap.get(item.id),  // 구독 날짜 매핑
         });

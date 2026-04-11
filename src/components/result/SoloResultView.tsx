@@ -14,6 +14,7 @@ import {
   calcTasteRarity,
   estimateWatchTime,
   generateOneLiner,
+  generateAggroOneLiner,
 } from "@/lib/insights";
 
 interface Props {
@@ -38,6 +39,14 @@ export function SoloResultView({ result }: Props) {
   const watchTime = estimateWatchTime(channelCount);
   const oneLiner = result.tasteType
     ? generateOneLiner(result.tasteType, result.topCategories ?? [])
+    : "";
+  const aggroOneLiner = result.tasteType
+    ? generateAggroOneLiner(
+        result.tasteType,
+        channelCount,
+        result.diversityIndex ?? 50,
+        result.topCategories ?? []
+      )
     : "";
 
   const handleCopyOneLiner = async () => {
@@ -77,9 +86,17 @@ export function SoloResultView({ result }: Props) {
 
       {/* ② 나를 설명하는 한 줄 */}
       {oneLiner && (
-        <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-1">
-          <p className="text-xs font-bold text-primary uppercase tracking-wide mb-3">🎯 나를 설명하는 한 줄</p>
-          <p className="text-base font-semibold text-gray-900 leading-relaxed mb-4">"{oneLiner}"</p>
+        <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-1 space-y-4">
+          <div>
+            <p className="text-xs font-bold text-primary uppercase tracking-wide mb-2">🎯 나를 설명하는 한 줄</p>
+            <p className="text-base font-semibold text-gray-900 leading-relaxed">"{oneLiner}"</p>
+          </div>
+          {aggroOneLiner && (
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">🔥 솔직한 버전</p>
+              <p className="text-sm font-semibold text-gray-800 leading-relaxed">"{aggroOneLiner}"</p>
+            </div>
+          )}
           <button
             onClick={handleCopyOneLiner}
             className="w-full py-2.5 rounded-xl border border-primary/30 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors"
@@ -212,22 +229,35 @@ export function SoloResultView({ result }: Props) {
         </div>
       )}
 
-      {/* ⑨ 추천 채널 */}
-      {result.recommendations.length > 0 && (
-        <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-3">
-          <h3 className="font-bold text-gray-900 mb-4">📺 추천 채널</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {result.recommendations.map((ch) => (
-              <div key={ch.id} className="shrink-0 w-24 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-2 text-lg font-bold text-primary">
-                  {ch.title[0]}
+      {/* ⑨ 추천 채널 (curatedRecs 우선, 없으면 recommendations) */}
+      {(() => {
+        const recs = (result as any).curatedRecs?.length
+          ? (result as any).curatedRecs
+          : result.recommendations;
+        if (!recs?.length) return null;
+        return (
+          <div className="bg-white rounded-3xl p-6 border border-border animate-fade-in-delay-3">
+            <h3 className="font-bold text-gray-900 mb-1">📺 구독 안 한 추천 채널</h3>
+            <p className="text-xs text-gray-400 mb-4">내 취향 기반으로 아직 구독 안 한 채널 추천</p>
+            <div className="space-y-3">
+              {recs.map((ch: any) => (
+                <div key={ch.id} className="flex items-center gap-3 p-3 bg-muted rounded-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0">
+                    {ch.title[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{ch.title}</p>
+                    {ch.description && (
+                      <p className="text-xs text-gray-400 truncate">{ch.description}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-300 shrink-0">{ch.country}</span>
                 </div>
-                <p className="text-xs font-medium text-gray-800 leading-tight line-clamp-2">{ch.title}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

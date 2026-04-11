@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
 
     // 심화 분석
     const channelStatsData = analyzeChannelStats(channelStatsRaw, channelsA);
-    const likedVideoInsight = analyzeLikedVideos(likedVideos, vecA);
+    const subscribedChannelIds = new Set(channelsA.map((c: any) => c.id));
+    const likedVideoInsight = analyzeLikedVideos(likedVideos, vecA, subscribedChannelIds);
 
     // 큐레이션 추천 (이미 구독한 채널 제외)
     const subscribedIds = new Set(channelsA.map(c => c.id));

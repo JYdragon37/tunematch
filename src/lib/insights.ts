@@ -154,3 +154,64 @@ export function generateOneLiner(tasteType: TasteType, topCategories: TopCategor
   const options = templates[tasteType] || templates.collector;
   return options[Math.floor(Math.random() * options.length)];
 }
+
+// ─── 어그로/유머 한 줄 ───
+
+export function generateAggroOneLiner(
+  tasteType: TasteType,
+  channelCount: number,
+  diversityIndex: number,
+  topCategories: TopCategory[]
+): string {
+  const top = topCategories[0]?.label || "";
+  const isAddicted = channelCount > 200;
+  const isConcentrated = diversityIndex < 35;
+
+  const aggroTemplates: Record<TasteType, string[]> = {
+    tech: [
+      `${channelCount}개 구독? 알고리즘한테 영혼 팔아버린 거 아니에요?`,
+      `유튜브 없이는 하루도 못 사는 테크 중독자`,
+      `IT 뉴스는 내가 먼저 안다. 친구들은 이미 포기함`,
+    ],
+    knowledge: [
+      `${channelCount}개 구독해놓고 실제로 본 건 10개? ㅋ`,
+      `지식 유튜브 162개 저장해놓고 영상 끝까지 본 건 없음`,
+      `"나 공부 중" (feat. 유튜브 ${channelCount}개 구독)`,
+    ],
+    entertainment: [
+      `${channelCount}개 구독하고 유튜브 하루 ${Math.round(channelCount * 1.5 * 12 / 60)}시간씩 보는 거 맞죠?`,
+      `알고리즘이 나를 키웠다고 해도 과언이 아님`,
+      `유튜브 없어지면 진짜 아무것도 못 할 사람`,
+    ],
+    humor: [
+      `진지한 게 제일 웃겨서 ${top} 채널만 ${channelCount}개 구독함`,
+      `주변 친구들 다 웃음 코드 안 맞다고 느끼는 사람`,
+      `밥 먹을 때, 자기 전에, 화장실에서도 웃긴 거 봄`,
+    ],
+    music: [
+      `플레이리스트 아니고 구독 목록으로 음악 듣는 사람`,
+      `스포티파이 있는데 유튜브 ${channelCount}개 뮤직 채널 구독 중`,
+      `"이 노래 알아?" (유튜브에서 먼저 발견한 척)`,
+    ],
+    lifestyle: [
+      `${channelCount}개 구독해서 영감 받은 게 아직 0개인 사람`,
+      `요리 채널 50개 구독, 실제 요리 횟수 0`,
+      `유튜브로 운동법 다 알지만 실제 운동은 안 함`,
+    ],
+    news: [
+      `${channelCount}개 뉴스 구독해서 걱정만 ${channelCount}배 늘어남`,
+      `시사 유튜브 중독자. 댓글창은 읽지 마세요.`,
+      `"나 이거 알아" (어제 유튜브에서 본 거)`,
+    ],
+    collector: [
+      `장르 불문 ${channelCount}개 구독. 취향이 취향을 잡아먹음`,
+      `알고리즘도 나를 파악 못 함. 나도 나를 모름`,
+      `${channelCount}개 구독이면 유튜브가 내 직업 아닌가요`,
+    ],
+  };
+
+  const options = aggroTemplates[tasteType] || aggroTemplates.collector;
+  // 채널 수가 많으면 더 자극적인 버전 선택
+  const idx = isAddicted ? 0 : isConcentrated ? 1 : 2;
+  return options[idx] || options[0];
+}

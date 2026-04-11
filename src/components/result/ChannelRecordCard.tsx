@@ -188,6 +188,94 @@ export function ChannelRecordCard({ data, totalChannels }: Props) {
           </div>
         </Section>
       )}
+
+      {/* 📺 영상 많이 올린 채널 TOP 5 */}
+      {d.top5ByVideoCount?.length > 0 && (
+        <Section emoji="📺" title="영상 가장 많이 올린 채널 TOP 5">
+          <div className="divide-y divide-gray-100">
+            {d.top5ByVideoCount.map((item: any, i: number) => (
+              <div key={item.title} className="flex items-center gap-3 py-2">
+                <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                </div>
+                <span className="text-xs font-bold text-gray-600 shrink-0">
+                  {item.videoCount?.toLocaleString()}개
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* 🏃 가장 오래된 채널 TOP 5 (채널 개설일) */}
+      {d.top5OldestChannels?.length > 0 && (
+        <Section emoji="🏺" title="가장 오래된 유튜브 채널 TOP 5">
+          <div className="divide-y divide-gray-100">
+            {d.top5OldestChannels.map((item: any, i: number) => (
+              <div key={item.title} className="flex items-center gap-3 py-2">
+                <span className="text-xs font-bold text-gray-400 w-4 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                  {item.channelCreatedAt && (
+                    <p className="text-xs text-gray-400">
+                      {new Date(item.channelCreatedAt).getFullYear()}년 개설
+                      {item.channelAgeYears ? ` · ${item.channelAgeYears}년 된 채널` : ""}
+                    </p>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500 shrink-0">{fmtSub(item.subscriberCount)}명</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* 🌙 평균 채널 나이 */}
+      {d.avgChannelAgeYears > 0 && (
+        <div className="bg-indigo-50 rounded-2xl p-4">
+          <p className="text-xs font-bold text-indigo-400 mb-1">🌙 내가 구독하는 채널 평균 나이</p>
+          <p className="text-2xl font-black text-indigo-700">{d.avgChannelAgeYears}년</p>
+          <p className="text-xs text-indigo-500 mt-1">
+            {d.avgChannelAgeYears >= 8 ? "유튜브 황금기부터 함께한 올드비 취향이에요" :
+             d.avgChannelAgeYears >= 5 ? "검증된 채널들을 주로 구독하는 타입이에요" :
+             "최신 채널을 빠르게 발굴하는 트렌디한 취향이에요"}
+          </p>
+        </div>
+      )}
+
+      {/* 🔮 나의 안목 채널 (일찍 구독 + 지금 큰 채널) */}
+      {d.earlyBirdChannels?.length > 0 && (
+        <Section emoji="🔮" title="나의 안목 채널 (일찍 구독한 대형 채널)">
+          <p className="text-xs text-gray-400 mb-2">2년 이상 전 구독 + 현재 100만 이상 채널</p>
+          <div className="divide-y divide-gray-100">
+            {d.earlyBirdChannels.map((item: ChannelStatItem, i: number) => (
+              <ChannelRow key={item.title} rank={i + 1} item={item} showDate />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* 🔤 채널명 자주 나오는 키워드 */}
+      {d.topKeywords?.length > 0 && (
+        <Section emoji="🔤" title="구독 채널에 자주 나오는 키워드">
+          <div className="flex flex-wrap gap-2">
+            {d.topKeywords.map((k: { word: string; count: number }, i: number) => (
+              <span
+                key={k.word}
+                className="px-3 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  backgroundColor: i === 0 ? "#FF4D0015" : i < 3 ? "#F59E0B15" : "#F3F4F6",
+                  color: i === 0 ? "#FF4D00" : i < 3 ? "#D97706" : "#6B7280",
+                  fontSize: `${Math.max(10, 13 - i)}px`,
+                }}
+              >
+                {k.word} <span className="opacity-60">{k.count}</span>
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
     </div>
   );
 }
