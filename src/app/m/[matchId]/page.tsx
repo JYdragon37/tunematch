@@ -23,6 +23,7 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -44,7 +45,10 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
   const fetchMatchData = async () => {
     try {
       const res = await fetch(`/api/match/${params.matchId}`);
-      if (res.status === 410) { setError("만료된 링크입니다. (7일 경과)"); return; }
+      if (res.status === 410) {
+        setExpired(true);
+        return;
+      }
       if (!res.ok) { setError("링크를 찾을 수 없습니다."); return; }
       const data = await res.json();
       if (data.status === "done") { router.push(`/result/${params.matchId}`); return; }
@@ -108,6 +112,24 @@ export default function InvitePage({ params }: { params: { matchId: string } }) 
           <p className="text-text-secondary text-sm">
             {connecting ? "취향 분석 중... (잠시 기다려주세요)" : "로딩 중..."}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (expired) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-5">
+        <div className="max-w-md w-full text-center">
+          <div className="text-5xl mb-4">⏰</div>
+          <h1 className="text-xl font-bold text-text-primary mb-2">분석 링크가 만료됐어요</h1>
+          <p className="text-text-secondary text-sm mb-2">
+            링크는 생성 후 <strong>24시간</strong>만 유효합니다.
+          </p>
+          <p className="text-text-secondary text-sm mb-6">
+            친구에게 새 링크를 다시 보내달라고 해주세요.
+          </p>
+          <a href="/"><Button variant="primary">TuneMatch 시작하기</Button></a>
         </div>
       </div>
     );

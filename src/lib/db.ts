@@ -12,7 +12,7 @@ export async function createSession(data: {
 }): Promise<MatchSession> {
   const id = uuidv4();
   const now = new Date();
-  const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   const { data: row, error } = await supabaseAdmin
     .from("match_sessions")
@@ -118,6 +118,7 @@ export async function saveResult(result: MatchResult): Promise<void> {
     channel_stats_data: (result as any).channelStatsData ?? null,
     liked_video_insight: (result as any).likedVideoInsight ?? null,
     curated_recs: (result as any).curatedRecs ?? null,
+    comparison_data: (result as any).comparisonData ?? null,
     created_at: result.createdAt,
   });
   if (error) throw new Error(`saveResult failed: ${error.message}`);
@@ -243,6 +244,7 @@ function rowToResult(row: any): MatchResult {
     channelStatsData: row.channel_stats_data ?? undefined,
     likedVideoInsight: row.liked_video_insight ?? undefined,
     curatedRecs: row.curated_recs ?? undefined,
+    comparisonData: row.comparison_data ?? undefined,
     createdAt: row.created_at,
   };
 }
