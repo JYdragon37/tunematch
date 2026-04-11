@@ -1,0 +1,417 @@
+{
+  "version": "3.0",
+  "lastUpdated": "2026-04-11T07:54:25.130Z",
+  "activeFeatures": [
+    "tunematch",
+    "data",
+    "create",
+    "[matchId]",
+    "join",
+    "result",
+    "notify",
+    "save",
+    "ui",
+    "charts",
+    "cards",
+    "connect",
+    "share"
+  ],
+  "primaryFeature": "tunematch",
+  "features": {
+    "tunematch": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:43:19.117Z",
+        "lastUpdated": "2026-04-11T07:51:15.942Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/page.tsx"
+    },
+    "data": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:45:28.226Z",
+        "lastUpdated": "2026-04-11T07:45:28.226Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/data/mock-channels.ts"
+    },
+    "create": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:01.210Z",
+        "lastUpdated": "2026-04-11T07:48:01.210Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/create/route.ts"
+    },
+    "[matchId]": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:04.213Z",
+        "lastUpdated": "2026-04-11T07:54:25.129Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/result/[matchId]/SaveResultModal.tsx"
+    },
+    "join": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:12.131Z",
+        "lastUpdated": "2026-04-11T07:48:12.131Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/[matchId]/join/route.ts"
+    },
+    "result": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:14.707Z",
+        "lastUpdated": "2026-04-11T07:48:14.707Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/[matchId]/result/route.ts"
+    },
+    "notify": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:16.457Z",
+        "lastUpdated": "2026-04-11T07:48:16.457Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/email/notify/route.ts"
+    },
+    "save": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:27.037Z",
+        "lastUpdated": "2026-04-11T07:48:27.037Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/result/save/route.ts"
+    },
+    "ui": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:48:49.603Z",
+        "lastUpdated": "2026-04-11T07:49:03.589Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/components/ui/CountUpScore.tsx"
+    },
+    "charts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:49:12.552Z",
+        "lastUpdated": "2026-04-11T07:49:12.552Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/components/charts/RadarChart.tsx"
+    },
+    "cards": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:49:23.534Z",
+        "lastUpdated": "2026-04-11T07:49:23.534Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/components/cards/ShareCard.tsx"
+    },
+    "connect": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:51:37.771Z",
+        "lastUpdated": "2026-04-11T07:51:37.771Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/connect/page.tsx"
+    },
+    "share": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-11T07:51:59.295Z",
+        "lastUpdated": "2026-04-11T07:51:59.295Z"
+      },
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/share/page.tsx"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-04-11T07:40:36.428Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-04-11T07:54:25.130Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-11T07:43:19.118Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:43:27.090Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:44:47.695Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:45:28.227Z",
+      "feature": "data",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:01.326Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:06.612Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:15.710Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:20.926Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:31.888Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:41.679Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:49.420Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:46:54.784Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:01.210Z",
+      "feature": "create",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:04.214Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:12.132Z",
+      "feature": "join",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:14.708Z",
+      "feature": "result",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:16.458Z",
+      "feature": "notify",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:24.027Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:27.037Z",
+      "feature": "save",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:40.046Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:49.603Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:53.237Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:48:59.143Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:49:03.590Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:49:12.553Z",
+      "feature": "charts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:49:23.535Z",
+      "feature": "cards",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:51:15.942Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:51:37.771Z",
+      "feature": "connect",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:51:59.295Z",
+      "feature": "share",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:53:04.756Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:53:42.075Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:54:00.264Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-11T07:54:25.130Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
+}
