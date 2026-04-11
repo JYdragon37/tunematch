@@ -9,6 +9,19 @@ import {
   generateSoloComment,
 } from "@/lib/algorithm";
 import { mockRecommendedChannels } from "@/data/mock-channels";
+import type { TasteType } from "@/types";
+
+// 취향 유형별 추천 채널 (실제 유명 YouTube 채널)
+const TASTE_RECOMMENDATIONS: Record<TasteType, Array<{ id: string; title: string; customCategory: string }>> = {
+  tech:          [{ id: "r1", title: "Fireship", customCategory: "tech" }, { id: "r2", title: "Theo - t3.gg", customCategory: "tech" }, { id: "r3", title: "Traversy Media", customCategory: "tech" }],
+  knowledge:     [{ id: "r4", title: "Kurzgesagt", customCategory: "knowledge" }, { id: "r5", title: "Veritasium", customCategory: "knowledge" }, { id: "r6", title: "TED", customCategory: "knowledge" }],
+  entertainment: [{ id: "r7", title: "MrBeast", customCategory: "entertainment" }, { id: "r8", title: "Mark Rober", customCategory: "entertainment" }, { id: "r9", title: "Mythbusters", customCategory: "entertainment" }],
+  humor:         [{ id: "r10", title: "Ryan George", customCategory: "humor" }, { id: "r11", title: "Gus Johnson", customCategory: "humor" }, { id: "r12", title: "Drew Gooden", customCategory: "humor" }],
+  music:         [{ id: "r13", title: "NPR Music", customCategory: "music" }, { id: "r14", title: "Tiny Desk Concerts", customCategory: "music" }, { id: "r15", title: "Colors", customCategory: "music" }],
+  lifestyle:     [{ id: "r16", title: "Joshua Weissman", customCategory: "food" }, { id: "r17", title: "Yes Theory", customCategory: "lifestyle" }, { id: "r18", title: "Pick Up Limes", customCategory: "lifestyle" }],
+  news:          [{ id: "r22", title: "TLDR News", customCategory: "news" }, { id: "r23", title: "Vox", customCategory: "news" }, { id: "r24", title: "Johnny Harris", customCategory: "news" }],
+  collector:     [{ id: "r25", title: "Tom Scott", customCategory: "knowledge" }, { id: "r26", title: "CGP Grey", customCategory: "knowledge" }, { id: "r27", title: "Wendover Productions", customCategory: "knowledge" }],
+};
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Channel } from "@/types";
 import { v4 as uuidv4 } from "uuid";
@@ -36,10 +49,8 @@ export async function POST(req: NextRequest) {
       usedMock = true;
     }
 
-    // 실제 채널이 있으면 기존 결과 재사용 (캐시)
-    // mock 채널이면 항상 재분석 (YouTube 재연동 후 정확한 결과 제공)
-    const existing = await getResultBySession(matchId);
-    if (existing && !usedMock) return NextResponse.json({ resultId: existing.id });
+    // 항상 재분석 (채널 분류 로직 업데이트 적용)
+    // TODO: 카테고리 분류 안정화 후 캐시 복원
 
     const vecA = buildCategoryVector(channelsA);
     const tasteType = classifyTasteType(vecA);
@@ -65,7 +76,12 @@ export async function POST(req: NextRequest) {
       comment,
       commentType,
       commonChannels: channelsA.slice(0, 5),
-      recommendations: mockRecommendedChannels,
+      recommendations: (TASTE_RECOMMENDATIONS[tasteType] || TASTE_RECOMMENDATIONS.collector).map(c => ({
+        ...c,
+        thumbnail: "",
+        categoryId: c.customCategory,
+        customCategory: c.customCategory as any,
+      })),
       userAVector: vecA,
       userBVector: vecA,
       tasteType,
