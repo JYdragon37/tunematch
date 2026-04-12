@@ -48,7 +48,7 @@ export async function GET(
     .single();
 
   if (sessErr || !sessionRow) {
-    return NextResponse.json({ error: "세션 없음" }, { status: 404 });
+    return NextResponse.json({ error: "세션 없음", debug: { matchId, errMsg: sessErr?.message } }, { status: 404 });
   }
 
   // 2. result_id가 있으면 → compare 완료. 해당 결과 직접 조회
@@ -80,12 +80,30 @@ export async function GET(
     // 솔로 결과만 있는 경우
     const solo = allResults[0];
     const status = sessionRow.status;
+    const _debug = {
+      sessionStatus: status,
+      resultId: sessionRow.result_id,
+      allResultsCount: allResults.length,
+      allUserBNames: allResults.map((r: any) => r.user_b_name),
+      allTasteTypes: allResults.map((r: any) => r.taste_type),
+      supabaseUrl: process.env.SUPABASE_URL?.slice(0, 40),
+    };
     if (status === "done") {
-      return NextResponse.json({ status: "analyzing", sessionStatus: "done", result: null });
+      return NextResponse.json({ status: "analyzing", sessionStatus: "done", result: null, _debug });
     }
-    return NextResponse.json({ status: "solo_done", sessionStatus: status, result: toResult(solo) });
+    return NextResponse.json({ status: "solo_done", sessionStatus: status, result: toResult(solo), _debug });
   }
 
   // 4. 결과 없음
-  return NextResponse.json({ status: sessionRow.status, sessionStatus: sessionRow.status, result: null });
+  return NextResponse.json({
+    status: sessionRow.status,
+    sessionStatus: sessionRow.status,
+    result: null,
+    _debug: {
+      sessionStatus: sessionRow.status,
+      resultId: sessionRow.result_id,
+      allResultsCount: allResults?.length ?? -1,
+      supabaseUrl: process.env.SUPABASE_URL?.slice(0, 40),
+    }
+  });
 }
