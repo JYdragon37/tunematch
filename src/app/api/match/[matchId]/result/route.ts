@@ -16,6 +16,10 @@ export async function GET(
 
   // 비교 완료 상태
   if (session.status === "done") {
+    // tasteType이 있으면 솔로 결과 → 궁합 결과가 아직 없음 (DB 지연/오류)
+    if (result.tasteType !== undefined) {
+      return NextResponse.json({ status: "analyzing", sessionStatus: "done", result: null });
+    }
     return NextResponse.json({ status: "done", sessionStatus: "done", result });
   }
 
