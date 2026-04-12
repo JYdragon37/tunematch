@@ -138,6 +138,20 @@ export async function getResultBySession(sessionId: string): Promise<MatchResult
   return rowToResult(comparison || rows[0]);
 }
 
+// 비교 결과만 직접 조회 (taste_type이 null = 비교 결과)
+export async function getComparisonResult(sessionId: string): Promise<MatchResult | null> {
+  const { data: rows, error } = await supabaseAdmin
+    .from("match_results")
+    .select()
+    .eq("match_session_id", sessionId)
+    .is("taste_type", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error || !rows || rows.length === 0) return null;
+  return rowToResult(rows[0]);
+}
+
 export async function getResult(id: string): Promise<MatchResult | null> {
   const { data: row, error } = await supabaseAdmin
     .from("match_results")
