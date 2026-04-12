@@ -138,18 +138,22 @@ export async function getResultBySession(sessionId: string): Promise<MatchResult
   return rowToResult(comparison || rows[0]);
 }
 
-// 비교 결과만 직접 조회 (taste_type이 null = 비교 결과)
+// 비교 결과만 직접 조회 (JS 레벨에서 필터링 - Vercel 환경 호환성 최대화)
 export async function getComparisonResult(sessionId: string): Promise<MatchResult | null> {
-  const { data: rows, error } = await supabaseAdmin
+  const { data: rows } = await supabaseAdmin
     .from("match_results")
     .select()
     .eq("match_session_id", sessionId)
-    .is("taste_type", null)
-    .order("created_at", { ascending: false })
-    .limit(1);
+    .order("created_at", { ascending: false });
 
-  if (error || !rows || rows.length === 0) return null;
-  return rowToResult(rows[0]);
+  if (!rows || rows.length === 0) return null;
+
+  // 비교 결과: taste_type이 null/undefined이고 user_b_name이 솔로 결과명이 아닌 것
+  const comp = rows.find((r: any) =>
+    (r.taste_type === null || r.taste_type === undefined) &&
+    r.user_b_name !== "나의 취향 분석"
+  );
+  return comp ? rowToResult(comp) : null;
 }
 
 export async function getResult(id: string): Promise<MatchResult | null> {
