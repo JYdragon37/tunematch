@@ -83,9 +83,9 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
       }
     } catch {
       setLoading(false);
-      // 에러 시에도 comparing 모드면 재시도
+      // 에러 시 재시도 (ERR_NETWORK_IO_SUSPENDED 등 일시적 에러 빠른 복구)
       if (isComparingRef.current) {
-        pollRef.current = setTimeout(fetchResult, 3000);
+        pollRef.current = setTimeout(fetchResult, 1000);
       }
     }
   };

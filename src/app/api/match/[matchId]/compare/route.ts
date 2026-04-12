@@ -58,7 +58,8 @@ export async function POST(
       bName: row.user_b_name || "친구",
       resultUrl,
     });
-    await sendEmail({ ...emailContent, to: session.notifyEmail }).catch(console.error);
+    // 이메일은 non-blocking (compare 응답 속도에 영향 X)
+    sendEmail({ ...emailContent, to: session.notifyEmail }).catch(console.error);
 
     return NextResponse.json({ success: true, resultId: result.id });
   } catch (error) {
