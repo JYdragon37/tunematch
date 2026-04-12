@@ -49,7 +49,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
 
       if (data.status === "done" && data.result) {
         // comparing 모드(B가 방금 compare 후 이동): sessionStorage 정리 + 축하 표시
-        if (isComparingMode) {
+        if (isComparingRef.current) {
           sessionStorage.removeItem(`comparing_${params.matchId}`);
           setIsComparingMode(false);
           isComparingRef.current = false;
@@ -109,10 +109,14 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
           {comparingTimedOut && (
             <button
               onClick={() => {
+                clearTimeout(pollRef.current);
                 sessionStorage.removeItem(`comparing_${params.matchId}`);
                 setIsComparingMode(false);
                 isComparingRef.current = false;
                 setComparingTimedOut(false);
+                setResult(null);
+                setLoading(true);
+                fetchResult();
               }}
               className="text-sm text-primary underline"
             >
