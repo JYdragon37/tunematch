@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
+// Next.js 14 GET Route Handler 캐싱 방지
+export const dynamic = "force-dynamic";
+
 // rowToResult 인라인 (db.ts 추상 함수 Vercel 환경 불안정 우회)
 function toResult(row: any) {
   return {
@@ -64,7 +67,7 @@ export async function GET(
     }
   }
 
-  // 3. match_results에서 비교 결과 탐색
+  // 3. match_results에서 비교 결과 탐색 (result_id 없는 엣지케이스 폴백)
   const { data: allResults } = await supabaseAdmin
     .from("match_results")
     .select()
