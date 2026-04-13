@@ -4,6 +4,7 @@ import { analyzeCompatibility } from "@/lib/algorithm";
 import { sendEmail, buildNotificationEmail } from "@/lib/email";
 import { mockRecommendedChannels } from "@/data/mock-channels";
 import { supabaseAdmin } from "@/lib/supabase";
+import { reclassifyChannels } from "@/lib/youtube";
 import type { Channel } from "@/types";
 
 export async function POST(
@@ -28,8 +29,8 @@ export async function POST(
 
     let channelsA: Channel[] = [];
     let channelsB: Channel[] = [];
-    try { channelsA = JSON.parse(row.channels_a || "[]"); } catch {}
-    try { channelsB = JSON.parse(row.channels_b || "[]"); } catch {}
+    try { channelsA = reclassifyChannels(JSON.parse(row.channels_a || "[]")); } catch {}
+    try { channelsB = reclassifyChannels(JSON.parse(row.channels_b || "[]")); } catch {}
 
     if (!channelsA.length) {
       return NextResponse.json({ error: "A의 채널 데이터가 없습니다. A가 다시 연동해야 합니다." }, { status: 422 });

@@ -17,11 +17,19 @@ const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
   ],
   knowledge: [
     "science", "education", "learn", "explain", "history", "documentary",
-    "academic", "lecture", "study", "tutorial", "how to", "school",
+    "academic", "lecture", "study", "tutorial", "howto", "how to", "school",
     "교육", "강의", "지식", "과학", "배움", "공부", "수학", "물리", "화학",
     "역사", "철학", "심리", "언어", "영어", "日本語", "shadowing",
+    // 영어 학습 (가장 많이 누락되는 카테고리)
+    "english", "listening", "speaking", "grammar", "vocabulary", "esl",
+    "language", "japanese", "chinese", "spanish", "french",
+    // 경제/투자/자기계발
     "투자", "재테크", "비즈니스", "경영", "마케팅", "창업", "스타트업", "자기계발",
-    "finance", "investing", "startup", "business",
+    "커리어", "직장", "취업", "부동산", "주식", "펀드", "절약", "돈",
+    "finance", "investing", "startup", "business", "career", "money",
+    "wealth", "rich", "stock", "real estate",
+    // 자연/다큐
+    "다큐", "documentary", "nature", "자연", "우주", "space",
   ],
   humor: [
     "comedy", "funny", "humor", "meme", "lol", "joke", "parody",
@@ -31,25 +39,30 @@ const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
     "music", "song", "artist", "singer", "band", "kpop", "pop", "hip hop",
     "jazz", "classical", "mv", "cover", "뮤직", "음악", "가수", "노래",
     "아이돌", "공연", "라이브", "뮤비", "tablo", "rapper", "hiphop",
+    "힙합", "재즈", "클래식", "발라드", "epik high", "epik",
   ],
   lifestyle: [
     "vlog", "lifestyle", "travel", "fashion", "beauty", "fitness", "yoga",
     "workout", "브이로그", "여행", "패션", "뷰티", "운동", "헬스", "다이어트",
-    "일상", "인테리어", "셀프",
+    "일상", "인테리어", "셀프", "camping", "캠핑", "등산", "자전거",
+    "trankilo", "daily", "routine",
   ],
   food: [
     "food", "cooking", "recipe", "eat", "restaurant", "mukbang", "chef",
     "먹방", "요리", "음식", "레시피", "맛집", "쿡방", "식당", "baking",
+    "베이킹", "dessert", "디저트",
   ],
   news: [
     "news", "politics", "economy", "world", "current", "analysis", "report",
     "뉴스", "정치", "경제", "시사", "분석", "사회", "이슈", "매트릭스",
-    "글로벌", "국제", "사설", "논평",
+    "글로벌", "국제", "사설", "논평", "시장", "금리", "환율",
   ],
   entertainment: [
     "game", "gaming", "movie", "drama", "anime", "entertainment", "esports",
     "게임", "영화", "드라마", "애니", "웹툰", "예능", "버라이어티", "방송",
     "tvn", "mbc", "kbs", "sbs", "채널a", "jtbc", "joy",
+    "sports", "sport", "스포츠", "축구", "야구", "농구", "테니스", "골프",
+    "레슬링", "격투", "mma", "ufc",
   ],
 };
 
@@ -76,6 +89,15 @@ function classifyByKeyword(title: string, description: string = ""): CategoryKey
     .sort((a, b) => b[1] - a[1])[0];
 
   return best[1] > 0 ? best[0] : "entertainment";
+}
+
+// 기존 저장된 채널들의 customCategory를 최신 키워드로 재분류
+export function reclassifyChannels(channels: import("@/types").Channel[]): import("@/types").Channel[] {
+  return channels.map(c => ({
+    ...c,
+    customCategory: classifyByKeyword(c.title, c.description ?? ""),
+    categoryId: classifyByKeyword(c.title, c.description ?? ""),
+  }));
 }
 
 export async function fetchSubscribedChannels(
