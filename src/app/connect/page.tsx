@@ -4,13 +4,6 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 
-const COLLECT_INFO = [
-  { icon: "✅", text: "구독 채널 목록" },
-  { icon: "✅", text: "좋아요 누른 영상" },
-  { icon: "❌", text: "시청 기록 (수집 안 함)" },
-  { icon: "❌", text: "개인정보 (수집 안 함)" },
-];
-
 export default function ConnectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,53 +22,78 @@ export default function ConnectPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* 상단 뒤로가기 */}
       <div className="max-w-md mx-auto px-5 py-4">
-        <Link href="/" className="text-text-secondary hover:text-text-primary text-sm flex items-center gap-1">
+        <Link
+          href="/"
+          className="text-text-secondary hover:text-text-primary text-sm flex items-center gap-1"
+        >
           ← 뒤로
         </Link>
       </div>
 
-      <div className="max-w-md mx-auto px-5 pt-4 pb-20">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <span className="text-3xl">🎵</span>
-          </div>
-          <h1 className="text-2xl font-black text-text-primary">
-            <span className="text-primary">TUNE</span>MATCH
+      <div className="max-w-md mx-auto px-5 pt-2 pb-20">
+        {/* 히어로 영역 */}
+        <div className="text-center pt-6 pb-10">
+          <div className="text-6xl mb-5">🎬</div>
+          <h1 className="text-2xl font-black text-text-primary mb-3 leading-tight">
+            유튜브 취향 분석
           </h1>
-        </div>
-
-        <h2 className="text-xl font-bold text-text-primary text-center mb-6">
-          내 유튜브 취향을 분석할게요
-        </h2>
-
-        <div className="bg-white rounded-3xl p-6 border border-border mb-6">
-          <h3 className="font-semibold text-text-primary mb-4 text-sm">수집하는 정보</h3>
-          <div className="space-y-3">
-            {COLLECT_INFO.map((info, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-lg">{info.icon}</span>
-                <span className={`text-sm ${info.icon === "❌" ? "text-text-muted line-through" : "text-text-primary font-medium"}`}>
-                  {info.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-center mb-8">
-          <p className="text-sm text-text-secondary leading-relaxed">
-            분석 후 즉시 삭제되며<br />
-            <strong>서버에 저장되지 않아요</strong>
+          <p className="text-base text-text-secondary leading-relaxed">
+            내 구독 기록으로<br />
+            취향 유형을 발견해요
           </p>
         </div>
 
+        {/* 이것만 가져가요 */}
+        <div className="bg-white rounded-3xl p-6 border border-border mb-4">
+          <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-4">
+            이것만 가져가요
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold">✓</span>
+              <span className="text-sm font-semibold text-text-primary">구독 채널 목록</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold">✓</span>
+              <span className="text-sm font-semibold text-text-primary">좋아요 누른 영상</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 이건 절대 안 봐요 */}
+        <div className="bg-gray-50 rounded-3xl p-5 border border-border mb-5">
+          <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-3">
+            이건 절대 안 봐요
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-400 text-xs font-bold">✕</span>
+              <span className="text-sm text-text-muted">시청 기록</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-400 text-xs font-bold">✕</span>
+              <span className="text-sm text-text-muted">댓글 · 개인정보</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 보안 뱃지 */}
+        <div className="flex justify-center mb-8">
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full px-3 py-1.5">
+            🔒 분석 후 즉시 삭제 · 서버에 저장 안 해요
+          </span>
+        </div>
+
+        {/* 에러 메시지 */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4 text-sm text-red-600">
             {error}
           </div>
         )}
 
+        {/* Google CTA 버튼 */}
         <Button
           variant="google"
           size="lg"
@@ -93,10 +111,13 @@ export default function ConnectPage() {
           Google 계정으로 연동하기
         </Button>
 
+        {/* 개인정보 안내 */}
         <p className="text-xs text-text-muted text-center">
           연동하면{" "}
-          <a href="#" className="underline hover:text-text-secondary">개인정보처리방침</a>에
-          동의한 것으로 간주됩니다
+          <a href="#" className="underline hover:text-text-secondary">
+            개인정보처리방침
+          </a>
+          에 동의한 것으로 간주됩니다
         </p>
       </div>
     </main>
