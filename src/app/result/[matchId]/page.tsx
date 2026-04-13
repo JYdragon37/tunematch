@@ -18,6 +18,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
   const [showSave, setShowSave] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [enriched, setEnriched] = useState<any>(null);
   const [isComparingMode, setIsComparingMode] = useState(false);
   const [comparingTimedOut, setComparingTimedOut] = useState(false);
   const prevResultRef = useRef<MatchResult | null>(null);
@@ -40,6 +41,16 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
     fetchResult();
     return () => clearTimeout(pollRef.current);
   }, [params.matchId]);
+
+  // enriched 데이터 fetch (비교 결과일 때만)
+  useEffect(() => {
+    if (result && !result.tasteType) {
+      fetch(`/api/match/${params.matchId}/enriched`)
+        .then(r => r.json())
+        .then(setEnriched)
+        .catch(() => {});
+    }
+  }, [result, params.matchId]);
 
   const fetchResult = async () => {
     try {
@@ -248,6 +259,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
         <CompatibilityView
           result={result}
           matchId={params.matchId}
+          enriched={enriched}
           onShare={() => setShowShare(true)}
           onSave={() => setShowSave(true)}
         />
