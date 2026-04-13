@@ -250,7 +250,7 @@ export function CompatibilityView({ result, matchId: _matchId, onShare, onSave }
                 </div>
                 <span className="text-text-primary text-sm font-medium flex-1 min-w-0 truncate">{channel.title}</span>
                 <span className="text-xs text-text-muted bg-muted rounded-full px-2 py-0.5 shrink-0">
-                  {channel.customCategory}
+                  {CATEGORY_LABELS[channel.customCategory] || channel.customCategory}
                 </span>
               </div>
             ))}
@@ -272,7 +272,7 @@ export function CompatibilityView({ result, matchId: _matchId, onShare, onSave }
                 </div>
                 <span className="text-text-primary text-sm font-medium flex-1 min-w-0 truncate">{channel.title}</span>
                 <span className="text-xs text-text-muted bg-muted rounded-full px-2 py-0.5 shrink-0">
-                  {channel.customCategory}
+                  {CATEGORY_LABELS[channel.customCategory] || channel.customCategory}
                 </span>
               </div>
             ))}
@@ -293,7 +293,7 @@ export function CompatibilityView({ result, matchId: _matchId, onShare, onSave }
                 </div>
                 <span className="text-text-primary text-sm font-medium flex-1 min-w-0 truncate">{channel.title}</span>
                 <span className="text-xs text-text-muted bg-muted rounded-full px-2 py-0.5 shrink-0">
-                  {channel.customCategory}
+                  {CATEGORY_LABELS[channel.customCategory] || channel.customCategory}
                 </span>
               </div>
             ))}

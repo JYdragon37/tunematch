@@ -182,7 +182,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
     );
   }
 
-  const isSolo = result.tasteType !== undefined;
+  const isSolo = result.tasteType != null;
 
   // ─── 솔로 분석 뷰 (친구 대기 배너 포함) ───
   if (isSolo) {

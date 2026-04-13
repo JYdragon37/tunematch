@@ -89,10 +89,12 @@ export async function POST(
     };
 
     // b_solo_result 업데이트
-    await supabaseAdmin
+    const { error: updateErr } = await supabaseAdmin
       .from("match_sessions")
       .update({ b_solo_result: fullSoloResult })
       .eq("id", params.matchId);
+
+    if (updateErr) throw new Error(`b_solo_result 업데이트 실패: ${updateErr.message}`);
 
     return NextResponse.json({ soloResult: fullSoloResult, userAName: row.user_a_name });
   } catch (error) {
