@@ -26,7 +26,7 @@ export function FriendTypeCard({ friendType, friendTypeReason, onStartMatch }: P
         </div>
       </div>
       <Button variant="primary" fullWidth onClick={onStartMatch}>
-        이 취향의 친구와 궁합 분석하기 →
+        친구와 유튜브 궁합 분석하기
       </Button>
     </div>
   );

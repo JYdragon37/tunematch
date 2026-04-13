@@ -96,7 +96,7 @@ export function SoloResultView({ result, hideInvite = false }: Props) {
           </div>
           {aggroOneLiner && (
             <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">🔥 솔직한 버전</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">💬 또 다른 시각</p>
               <p className="text-sm font-semibold text-gray-800 leading-relaxed">"{aggroOneLiner}"</p>
             </div>
           )}
