@@ -11,16 +11,17 @@ const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
   tech: [
     "tech", "technology", "programming", "coding", "software", "hardware",
-    "linux", "python", "javascript", "ai", "machine learning", "startup",
-    "developer", "개발", "프로그래밍", "코딩", "it", "computer", "컴퓨터",
-    "데이터", "클라우드", "서버", "앱", "디지털", "테크", "스타트업", "투자",
-    "재테크", "비즈니스", "경영", "마케팅", "창업",
+    "linux", "python", "javascript", "ai", "machine learning",
+    "developer", "개발", "프로그래밍", "코딩", "컴퓨터",
+    "데이터", "클라우드", "서버", "디지털", "테크",
   ],
   knowledge: [
     "science", "education", "learn", "explain", "history", "documentary",
     "academic", "lecture", "study", "tutorial", "how to", "school",
     "교육", "강의", "지식", "과학", "배움", "공부", "수학", "물리", "화학",
     "역사", "철학", "심리", "언어", "영어", "日本語", "shadowing",
+    "투자", "재테크", "비즈니스", "경영", "마케팅", "창업", "스타트업", "자기계발",
+    "finance", "investing", "startup", "business",
   ],
   humor: [
     "comedy", "funny", "humor", "meme", "lol", "joke", "parody",
@@ -29,12 +30,12 @@ const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
   music: [
     "music", "song", "artist", "singer", "band", "kpop", "pop", "hip hop",
     "jazz", "classical", "mv", "cover", "뮤직", "음악", "가수", "노래",
-    "kpop", "아이돌", "공연", "라이브", "뮤비",
+    "아이돌", "공연", "라이브", "뮤비", "tablo", "rapper", "hiphop",
   ],
   lifestyle: [
     "vlog", "lifestyle", "travel", "fashion", "beauty", "fitness", "yoga",
     "workout", "브이로그", "여행", "패션", "뷰티", "운동", "헬스", "다이어트",
-    "일상", "인테리어", "셀프", "자기계발",
+    "일상", "인테리어", "셀프",
   ],
   food: [
     "food", "cooking", "recipe", "eat", "restaurant", "mukbang", "chef",
@@ -48,14 +49,13 @@ const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
   entertainment: [
     "game", "gaming", "movie", "drama", "anime", "entertainment", "esports",
     "게임", "영화", "드라마", "애니", "웹툰", "예능", "버라이어티", "방송",
-    "tvn", "mbc", "kbs", "sbs", "채널a", "jtbc", "joy", "studio",
+    "tvn", "mbc", "kbs", "sbs", "채널a", "jtbc", "joy",
   ],
 };
 
 function classifyByKeyword(title: string, description: string = ""): CategoryKey {
   const text = (title + " " + description).toLowerCase();
 
-  // 점수 기반 분류
   const scores: Record<CategoryKey, number> = {
     tech: 0, knowledge: 0, humor: 0, lifestyle: 0,
     music: 0, news: 0, food: 0, entertainment: 0,
@@ -63,9 +63,12 @@ function classifyByKeyword(title: string, description: string = ""): CategoryKey
 
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     for (const keyword of keywords) {
-      if (text.includes(keyword.toLowerCase())) {
-        scores[category as CategoryKey]++;
-      }
+      const kw = keyword.toLowerCase();
+      // 짧은 단어(3자 이하)는 단어 경계 매칭, 긴 단어는 substring 매칭
+      const matched = kw.length <= 3
+        ? new RegExp(`\\b${kw}\\b`).test(text)
+        : text.includes(kw);
+      if (matched) scores[category as CategoryKey]++;
     }
   }
 
