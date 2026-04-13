@@ -10,7 +10,8 @@ export async function GET(
     return NextResponse.json({ error: "세션을 찾을 수 없습니다" }, { status: 404 });
   }
 
-  if (new Date(session.expiresAt) < new Date() && session.status === "waiting") {
+  // 만료 체크: done/expired 제외한 모든 진행 중 상태에서 체크
+  if (new Date(session.expiresAt) < new Date() && session.status !== "done" && session.status !== "expired") {
     await updateSession(params.matchId, { status: "expired" });
     return NextResponse.json({ error: "만료된 링크입니다" }, { status: 410 });
   }

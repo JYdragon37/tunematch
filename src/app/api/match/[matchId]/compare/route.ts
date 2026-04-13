@@ -17,6 +17,10 @@ export async function POST(
     const status = session.status as string;
     if (status === "done") return NextResponse.json({ error: "이미 완료" }, { status: 409 });
     if (status === "expired") return NextResponse.json({ error: "만료된 세션" }, { status: 410 });
+    if (status === "analyzing") return NextResponse.json({ error: "이미 처리 중" }, { status: 409 });
+
+    // Race condition 방지: 'analyzing'으로 선점 → 동시 요청 차단
+    await updateSession(params.matchId, { status: "analyzing" });
 
     // channels_a, channels_b 조회 (status 체크보다 데이터 존재 여부가 신뢰성 있음)
     const { data: row, error: rowErr } = await supabaseAdmin
@@ -66,6 +70,8 @@ export async function POST(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[match/compare error]", msg);
+    // analyzing 상태 롤백 (실패 시 b_joined로 되돌림)
+    updateSession(params.matchId, { status: "b_joined" }).catch(() => {});
     return NextResponse.json({ error: "비교 실패", detail: msg }, { status: 500 });
   }
 }

@@ -702,13 +702,14 @@ export function calcChemistryScores(vecA: CategoryVector, vecB: CategoryVector):
 } {
   const knowledgeAvg = (vecA.knowledge + vecB.knowledge) / 2;
   const newsAvg = (vecA.news + vecB.news) / 2;
-  const conversationScore = Math.round((knowledgeAvg + newsAvg) * 100);
+  // 각 avg는 0-1이므로 합산 후 /2해서 0-100 범위 보장
+  const conversationScore = Math.round((knowledgeAvg + newsAvg) / 2 * 100);
 
   const varietyScore = Math.round((calcDiversityIndex(vecA) + calcDiversityIndex(vecB)) / 2);
 
   const entAvg = (vecA.entertainment + vecB.entertainment) / 2;
   const humorAvg = (vecA.humor + vecB.humor) / 2;
-  const bingeDangerScore = Math.round((entAvg + humorAvg) * 100);
+  const bingeDangerScore = Math.round((entAvg + humorAvg) / 2 * 100);
 
   return {
     conversationScore: Math.min(100, conversationScore),
@@ -913,6 +914,7 @@ export function generateCompatibilityStory(
 ): string {
   const topA = CATEGORY_LABELS_KO[(Object.entries(vecA) as [string, number][]).sort((a,b) => b[1]-a[1])[0]?.[0]] || "다양한 콘텐츠";
   const topB = CATEGORY_LABELS_KO[(Object.entries(vecB) as [string, number][]).sort((a,b) => b[1]-a[1])[0]?.[0]] || "다양한 콘텐츠";
-  const idx = totalScore >= 60 ? 0 : 1;
+  // 75+: template[0] 고득점 메시지, <75: template[1] (60-74 중간 / <60 낮음)
+  const idx = totalScore >= 75 ? 0 : 1;
   return STORY_TEMPLATES[idx](userAName, userBName, topA, topB, totalScore);
 }

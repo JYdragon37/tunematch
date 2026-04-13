@@ -1,25 +1,14 @@
 {
   "version": "1.0",
-  "enabled": true,
+  "enabled": false,
   "teamName": "",
   "feature": "tunematch",
   "pdcaPhase": "do",
   "orchestrationPattern": "leader",
   "ctoAgent": "opus",
-  "startedAt": "2026-04-13T13:10:44.497Z",
-  "lastUpdated": "2026-04-13T13:13:19.568Z",
-  "teammates": [
-    {
-      "name": "abc6c03fe0cbb729b",
-      "role": "general-purpose",
-      "model": "sonnet",
-      "status": "completed",
-      "currentTask": null,
-      "taskId": null,
-      "startedAt": "2026-04-13T13:10:44.501Z",
-      "lastActivityAt": "2026-04-13T13:13:19.565Z"
-    }
-  ],
+  "startedAt": "2026-04-13T14:06:01.877Z",
+  "lastUpdated": "2026-04-13T14:07:39.003Z",
+  "teammates": [],
   "progress": {
     "totalTasks": 0,
     "completedTasks": 0,

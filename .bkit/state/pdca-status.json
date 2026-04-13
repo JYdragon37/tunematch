@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-13T13:15:22.204Z",
+  "lastUpdated": "2026-04-13T14:17:27.042Z",
   "activeFeatures": [
     "tunematch",
     "data",
@@ -35,9 +35,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-11T07:43:19.117Z",
-        "lastUpdated": "2026-04-13T12:57:41.023Z"
+        "lastUpdated": "2026-04-13T14:14:58.660Z"
       },
-      "lastFile": "/Users/jeongyong/workspace/tunematch/src/lib/youtube.ts"
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/lib/algorithm.ts"
     },
     "data": {
       "phase": "do",
@@ -74,9 +74,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-11T07:48:04.213Z",
-        "lastUpdated": "2026-04-13T13:11:11.206Z"
+        "lastUpdated": "2026-04-13T14:16:57.945Z"
       },
-      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/result/[matchId]/page.tsx"
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/[matchId]/route.ts"
     },
     "join": {
       "phase": "do",
@@ -204,9 +204,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-11T09:35:23.492Z",
-        "lastUpdated": "2026-04-11T18:49:59.145Z"
+        "lastUpdated": "2026-04-13T14:17:27.041Z"
       },
-      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/m/[matchId]/solo/page.tsx"
+      "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/solo/route.ts"
     },
     "callback": {
       "phase": "do",
@@ -256,7 +256,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-11T16:48:06.581Z",
-        "lastUpdated": "2026-04-12T04:27:05.467Z"
+        "lastUpdated": "2026-04-13T14:16:43.972Z"
       },
       "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/[matchId]/compare/route.ts"
     },
@@ -295,7 +295,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-13T13:15:22.203Z",
-        "lastUpdated": "2026-04-13T13:15:22.203Z"
+        "lastUpdated": "2026-04-13T13:50:54.054Z"
       },
       "lastFile": "/Users/jeongyong/workspace/tunematch/src/app/api/match/[matchId]/enriched/route.ts"
     }
@@ -308,7 +308,7 @@
   "session": {
     "startedAt": "2026-04-11T07:40:36.428Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-13T13:15:22.204Z"
+    "lastActivity": "2026-04-13T14:17:27.042Z"
   },
   "history": [
     {
@@ -2042,6 +2042,144 @@
     {
       "timestamp": "2026-04-13T13:15:22.204Z",
       "feature": "enriched",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T13:49:24.064Z",
+      "feature": "enriched",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T13:49:53.429Z",
+      "feature": "enriched",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T13:50:18.655Z",
+      "feature": "enriched",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T13:50:54.054Z",
+      "feature": "enriched",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:01:39.302Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:02:48.193Z",
+      "feature": "compare",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:02:55.147Z",
+      "feature": "compare",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:03:11.722Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:14:52.309Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:14:58.660Z",
+      "feature": "tunematch",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:15:14.628Z",
+      "feature": "solo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:15:20.511Z",
+      "feature": "solo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:15:43.690Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:15:48.914Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:15:57.111Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:16:01.380Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:16:18.296Z",
+      "feature": "compare",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:16:33.370Z",
+      "feature": "compare",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:16:43.973Z",
+      "feature": "compare",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:16:57.946Z",
+      "feature": "[matchId]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:17:12.795Z",
+      "feature": "solo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:17:18.750Z",
+      "feature": "solo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-13T14:17:27.041Z",
+      "feature": "solo",
       "phase": "do",
       "action": "updated"
     }

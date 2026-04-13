@@ -23,6 +23,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
   const [comparingTimedOut, setComparingTimedOut] = useState(false);
   const prevResultRef = useRef<MatchResult | null>(null);
   const isComparingRef = useRef(false);
+  const isMountedRef = useRef(true); // 언마운트 후 setState 방지
   const router = useRouter();
   const pollRef = useRef<NodeJS.Timeout>();
 
@@ -38,8 +39,12 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
   }, [params.matchId]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchResult();
-    return () => clearTimeout(pollRef.current);
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(pollRef.current);
+    };
   }, [params.matchId]);
 
   // enriched 데이터 fetch (비교 결과일 때만)
@@ -56,6 +61,7 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
     try {
       const res = await fetch(`/api/match/${params.matchId}/result`);
       const data = await res.json();
+      if (!isMountedRef.current) return; // 언마운트 후 무시
       setSessionStatus(data.sessionStatus || data.status);
 
       if (data.status === "done" && data.result) {
@@ -84,10 +90,12 @@ function ResultPageContent({ params }: { params: { matchId: string } }) {
         prevResultRef.current = data.result;
         setResult(data.result);
         setLoading(false);
+        clearTimeout(pollRef.current);
         pollRef.current = setTimeout(fetchResult, 3000);
       } else if (["waiting", "b_joined", "analyzing"].includes(data.status)) {
         // 솔로 없이 대기 중 OR B가 join했지만 아직 비교 안 함
         setLoading(false);
+        clearTimeout(pollRef.current);
         pollRef.current = setTimeout(fetchResult, 3000);
       } else {
         setLoading(false);

@@ -44,15 +44,16 @@ export async function POST(req: NextRequest) {
     }
 
     let channelsA: Channel[] = [];
-    let usedMock = false;
     if (sessionRow?.channels_a) {
       try { channelsA = JSON.parse(sessionRow.channels_a); } catch {}
     }
     if (channelsA.length === 0) {
-      console.log("[solo] channels_a 없음 → mock 폴백");
-      const { mockChannelsA } = await import("@/data/mock-channels");
-      channelsA = mockChannelsA;
-      usedMock = true;
+      // 채널 데이터 없음 → 에러 반환 (mock 데이터로 조용히 폴백하면 사용자가 잘못된 분석인지 모름)
+      console.error("[solo] channels_a 없음 → 분석 불가");
+      return NextResponse.json({
+        error: "CHANNEL_DATA_MISSING",
+        message: "채널 데이터가 없습니다. 다시 연동해주세요."
+      }, { status: 422 });
     }
 
     // accessToken: 요청에서만 받음 (채널 통계/좋아요 API용)
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
       sendMessage(msg).catch(console.error);
     }).catch(console.error);
 
-    return NextResponse.json({ resultId: result.id, usedMock });
+    return NextResponse.json({ resultId: result.id });
   } catch (error) {
     console.error("[match/solo error]", error);
     return NextResponse.json({ error: "분석 실패" }, { status: 500 });

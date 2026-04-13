@@ -90,6 +90,9 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
   const handleCompare = async () => {
     setComparing(true);
     setCompareError(null);
+    // enriching 중이면 sessionStorage 업데이트 경쟁조건 방지: enriching 완료 대기 없이
+    // sessionStorage를 먼저 비워서 b-analyze 결과가 뒤늦게 쓰더라도 compare 흐름에 영향 없게 함
+    sessionStorage.removeItem(`solo_${params.matchId}`);
     try {
       const res = await fetch(`/api/match/${params.matchId}/compare`, {
         method: "POST",
@@ -107,7 +110,7 @@ export default function BSoloPage({ params }: { params: { matchId: string } }) {
         throw new Error(`${err.error || "비교 실패"}${detail}`);
       }
 
-      sessionStorage.removeItem(`solo_${params.matchId}`);
+      // sessionStorage는 handleCompare 진입 시 이미 제거됨
       sessionStorage.setItem(`comparing_${params.matchId}`, "true");
       router.push(`/result/${params.matchId}`);
     } catch (e: any) {
