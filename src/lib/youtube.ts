@@ -13,7 +13,8 @@ const CATEGORY_KEYWORDS: Record<CategoryKey, string[]> = {
     "tech", "technology", "programming", "coding", "software", "hardware",
     "linux", "python", "javascript", "ai", "machine learning",
     "developer", "개발", "프로그래밍", "코딩", "컴퓨터",
-    "데이터", "클라우드", "서버", "디지털", "테크",
+    "데이터", "클라우드", "서버", "디지털",
+    // "테크" 제거: "재테크" 등 금융 채널과 substring 충돌 발생
   ],
   knowledge: [
     "science", "education", "learn", "explain", "history", "documentary",
@@ -77,8 +78,10 @@ function classifyByKeyword(title: string, description: string = ""): CategoryKey
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     for (const keyword of keywords) {
       const kw = keyword.toLowerCase();
-      // 짧은 단어(3자 이하)는 단어 경계 매칭, 긴 단어는 substring 매칭
-      const matched = kw.length <= 3
+      // \b(word boundary)는 ASCII에서만 동작, 한국어 문자는 \W 취급되어 \b매칭 불가
+      // → ASCII 짧은 단어(3자 이하)만 단어 경계 매칭, 한국어는 항상 substring 매칭
+      const isKorean = /[가-힣]/.test(kw);
+      const matched = (!isKorean && kw.length <= 3)
         ? new RegExp(`\\b${kw}\\b`).test(text)
         : text.includes(kw);
       if (matched) scores[category as CategoryKey]++;
