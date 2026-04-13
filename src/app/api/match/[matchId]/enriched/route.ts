@@ -15,9 +15,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   food: "음식/요리", tech: "테크",
 };
 
-// 국가 라벨에서 flag 이모지 제거
+// 국가 라벨에서 앞의 이모지+공백 제거 ("🇰🇷 한국" → "한국")
 function cleanLabel(label: string): string {
-  return label?.replace(/^[\u{1F1E0}-\u{1F1FF}]{2}\s*/u, "").trim() ?? label;
+  if (!label) return label;
+  const parts = label.split(" ");
+  return parts.length > 1 ? parts.slice(1).join(" ").trim() : label;
 }
 
 // 구독 날짜 기반 "진짜 취향" vs "최근 관심사" 계산
@@ -59,7 +61,10 @@ function likedSyncScore(aCats: any[], bCats: any[]): number {
   for (const c of aCats) aVec[c.category] = (c.percent ?? 0) / 100;
   for (const c of bCats) bVec[c.category] = (c.percent ?? 0) / 100;
 
-  const cats = [...new Set([...Object.keys(aVec), ...Object.keys(bVec)])];
+  const catSet: Record<string, boolean> = {};
+  Object.keys(aVec).forEach(k => { catSet[k] = true; });
+  Object.keys(bVec).forEach(k => { catSet[k] = true; });
+  const cats = Object.keys(catSet);
   let dot = 0, magA = 0, magB = 0;
   for (const cat of cats) {
     const a = aVec[cat] ?? 0;
@@ -125,9 +130,10 @@ export async function GET(req: NextRequest, { params }: { params: { matchId: str
       const bTop = bLiked?.top10LikedCategories ?? [];
 
       // Feature 8: 두 사람 모두 좋아요 top4에 있는 카테고리
-      const aSet = new Set(aTop.slice(0, 4).map((c: any) => c.category));
-      const bSet = new Set(bTop.slice(0, 4).map((c: any) => c.category));
-      const hiddenCommonCategories = [...aSet].filter(cat => bSet.has(cat));
+      const aTop4 = aTop.slice(0, 4).map((c: any) => c.category as string);
+      const bTop4Set: Record<string, boolean> = {};
+      bTop.slice(0, 4).forEach((c: any) => { bTop4Set[c.category] = true; });
+      const hiddenCommonCategories = aTop4.filter((cat: string) => bTop4Set[cat]);
 
       likedComparison = {
         syncScore: likedSyncScore(aTop, bTop),
