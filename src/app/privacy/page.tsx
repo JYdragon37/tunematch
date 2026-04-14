@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 const LAST_UPDATED = "2026년 4월 14일";
 const SERVICE_NAME = "TuneMatch";
-const OPERATOR_NAME = "허정용";
+const OPERATOR_NAME = "Jeongyong Huh";
 const CONTACT_EMAIL = "huhjungyong@gmail.com";
 const SERVICE_URL = "https://tunematch-f3ss.vercel.app";
 
