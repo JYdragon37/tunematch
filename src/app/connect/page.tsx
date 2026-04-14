@@ -114,7 +114,7 @@ export default function ConnectPage() {
         {/* 개인정보 안내 */}
         <p className="text-xs text-text-muted text-center">
           연동하면{" "}
-          <a href="#" className="underline hover:text-text-secondary">
+          <a href="/privacy" className="underline hover:text-text-secondary">
             개인정보처리방침
           </a>
           에 동의한 것으로 간주됩니다
